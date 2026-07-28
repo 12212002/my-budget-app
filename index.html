@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Spending Tracker</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #18202a;
+      --muted: #6b7280;
+      --border: #dfe4ea;
+      --positive: #18794e;
+      --negative: #c62828;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      width: min(1000px, calc(100% - 32px));
+      margin: 32px auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 5vw, 42px);
+    }
+
+    .subtitle {
+      margin: 0 0 24px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .value {
+      font-size: 30px;
+      font-weight: 700;
+    }
+
+    .positive { color: var(--positive); }
+    .negative { color: var(--negative); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr auto auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    input, button {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+
+    input {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      background: white;
+    }
+
+    input:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.2);
+      border-color: var(--accent);
+    }
+
+    button {
+      border: 0;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .primary:hover { background: var(--accent-hover); }
+
+    .secondary {
+      background: #eef2ff;
+      color: #1e40af;
+    }
+
+    .danger {
+      background: #fff1f1;
+      color: var(--negative);
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    td.amount, th.amount { text-align: right; }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .actions button {
+      width: auto;
+      min-height: 34px;
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+
+    .section-title {
+      margin: 0 0 16px;
+      font-size: 20px;
+    }
+
+    .spacer { height: 20px; }
+
+    .note {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 28px;
+      color: var(--muted);
+    }
+
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-backdrop.show { display: flex; }
+
+    .modal {
+      width: min(460px, 100%);
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+
+    .modal h2 { margin: 0 0 10px; color: var(--negative); }
+    .modal p { color: var(--muted); line-height: 1.5; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .modal-actions button { width: auto; min-width: 110px; }
+
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+      .form-grid, .settings { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Daily Spending Tracker</h1>
+    <p class="subtitle">
+      You receive $10.00 each day. Spending less creates a surplus.
+      Spending more reduces the amount available on future days.
+    </p>
+
+    <section class="grid">
+      <div class="card">
+        <div class="label">Available on Selected Day</div>
+        <div id="availableToday" class="value">$0.00</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Spent This Month</div>
+        <div id="monthSpent" class="value">$0.00</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Monthly Budget Remaining</div>
+        <div id="monthRemaining" class="value">$0.00</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Total Spent</div>
+        <div id="totalSpent" class="value">$0.00</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Add Spending</h2>
+      <form id="expenseForm" class="form-grid">
+        <div>
+          <label for="expenseDate">Date</label>
+          <input id="expenseDate" type="date" required />
+        </div>
+
+        <div>
+          <label for="expenseAmount">Amount</label>
+          <input id="expenseAmount" type="number" min="0" step="0.01" placeholder="0.00" required />
+        </div>
+
+        <div>
+          <label for="expenseDescription">Description</label>
+          <input id="expenseDescription" type="text" maxlength="80" placeholder="Coffee, lunch, shopping..." />
+        </div>
+
+        <div>
+          <button type="submit" class="primary">Add Spending</button>
+          <button type="button" id="addZeroDay" class="secondary">Add $0 Day</button>
+        </div>
+      </form>
+      <div id="formMessage" class="note"></div>
+    </section>
+
+    <div class="spacer"></div>
+
+    <section class="card">
+      <h2 class="section-title">Settings</h2>
+      <div class="settings">
+        <div>
+          <label for="dailyAllowance">Daily allowance</label>
+          <input id="dailyAllowance" type="number" min="0.01" step="0.01" value="10.00" />
+        </div>
+
+        <div>
+          <label for="monthlyBudget">Monthly spending budget</label>
+          <input id="monthlyBudget" type="number" min="0.01" step="0.01" value="400.00" />
+        </div>
+
+        <div>
+          <label for="startDate">Tracking start date</label>
+          <input id="startDate" type="date" />
+        </div>
+
+        <button id="saveSettings" class="secondary" type="button">Save Settings</button>
+      </div>
+      <p class="note">
+        Your available balance equals all daily allowances earned since your start date,
+        minus all spending entered. A negative balance is carried into future days.
+      </p>
+    </section>
+
+    <div class="spacer"></div>
+
+    <section class="card">
+      <h2 class="section-title">Spending History</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th class="amount">Spent</th>
+              <th class="amount">Balance After</th>
+              <th class="amount">Action</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty">No spending has been added yet.</div>
+    </section>
+
+    <div class="spacer"></div>
+
+    <section class="card">
+      <button id="resetData" class="danger" type="button">Reset All Data</button>
+    </section>
+  </main>
+
+  <div id="resetModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+    <div class="modal">
+      <h2 id="resetTitle">Warning: Clear All Data?</h2>
+      <p>This will permanently delete all spending history, your surplus or deficit, monthly totals, and settings. This cannot be undone.</p>
+      <div class="modal-actions">
+        <button id="cancelReset" type="button" class="secondary">Cancel</button>
+        <button id="confirmReset" type="button" class="danger">Clear All Data</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "dailySpendingTrackerDataV1";
+
+    function localDateString(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function createDefaultData() {
+      return {
+        dailyAllowance: 10,
+        monthlyBudget: 400,
+        startDate: localDateString(),
+        expenses: []
+      };
+    }
+
+    let data = loadData();
+
+    function loadData() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return saved ? { ...createDefaultData(), ...saved } : createDefaultData();
+      } catch {
+        return createDefaultData();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function parseLocalDate(value) {
+      const [year, month, day] = value.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function nextDateString(value) {
+      const date = parseLocalDate(value);
+      date.setDate(date.getDate() + 1);
+      return localDateString(date);
+    }
+
+    function daysInclusive(start, end) {
+      const startDate = parseLocalDate(start);
+      const endDate = parseLocalDate(end);
+
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+
+      const difference = Math.floor((endDate - startDate) / 86400000);
+      return difference >= 0 ? difference + 1 : 0;
+    }
+
+    function currency(value) {
+      return new Intl.NumberFormat("en-CA", {
+        style: "currency",
+        currency: "CAD"
+      }).format(value);
+    }
+
+    function totalSpentUpTo(dateString) {
+      return data.expenses
+        .filter(expense => expense.date <= dateString)
+        .reduce((sum, expense) => sum + Number(expense.amount), 0);
+    }
+
+    function allowanceEarnedUpTo(dateString) {
+      return daysInclusive(data.startDate, dateString) * Number(data.dailyAllowance);
+    }
+
+    function currentBalance() {
+      const today = localDateString();
+      return allowanceEarnedUpTo(today) - totalSpentUpTo(today);
+    }
+
+    function monthSpentFor(dateString) {
+      const month = dateString.slice(0, 7);
+      return data.expenses
+        .filter(expense => expense.date.startsWith(month))
+        .reduce((sum, expense) => sum + Number(expense.amount), 0);
+    }
+
+    function render() {
+      const selectedDate = document.getElementById("expenseDate").value || localDateString();
+      const earned = allowanceEarnedUpTo(selectedDate);
+      const spentThroughSelectedDate = totalSpentUpTo(selectedDate);
+      const balance = earned - spentThroughSelectedDate;
+      const monthSpent = monthSpentFor(selectedDate);
+      const monthRemaining = Number(data.monthlyBudget) - monthSpent;
+      const allTimeSpent = data.expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+
+      const balanceElement = document.getElementById("availableToday");
+      balanceElement.textContent = currency(balance);
+      balanceElement.className = `value ${balance >= 0 ? "positive" : "negative"}`;
+
+      document.getElementById("monthSpent").textContent = currency(monthSpent);
+      const monthRemainingElement = document.getElementById("monthRemaining");
+      monthRemainingElement.textContent = currency(monthRemaining);
+      monthRemainingElement.className = `value ${monthRemaining >= 0 ? "positive" : "negative"}`;
+      document.getElementById("totalSpent").textContent = currency(allTimeSpent);
+
+      document.getElementById("dailyAllowance").value = Number(data.dailyAllowance).toFixed(2);
+      document.getElementById("monthlyBudget").value = Number(data.monthlyBudget).toFixed(2);
+      document.getElementById("startDate").value = data.startDate;
+
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const body = document.getElementById("historyBody");
+      const emptyState = document.getElementById("emptyState");
+      body.innerHTML = "";
+
+      const sorted = [...data.expenses].sort((a, b) => {
+        if (a.date === b.date) return a.createdAt.localeCompare(b.createdAt);
+        return a.date.localeCompare(b.date);
+      });
+
+      if (sorted.length === 0) {
+        emptyState.style.display = "block";
+        return;
+      }
+
+      emptyState.style.display = "none";
+
+      sorted.forEach(expense => {
+        const balanceAfter = allowanceEarnedUpTo(expense.date) -
+          sorted
+            .filter(item =>
+              item.date < expense.date ||
+              (item.date === expense.date && item.createdAt <= expense.createdAt)
+            )
+            .reduce((sum, item) => sum + Number(item.amount), 0);
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${formatDate(expense.date)}</td>
+          <td>${escapeHtml(expense.description || "Spending")}</td>
+          <td class="amount">${currency(expense.amount)}</td>
+          <td class="amount ${balanceAfter >= 0 ? "positive" : "negative"}">${currency(balanceAfter)}</td>
+          <td class="amount">
+            <div class="actions">
+              <button type="button" class="danger" data-delete="${expense.id}">Delete</button>
+            </div>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+
+      document.querySelectorAll("[data-delete]").forEach(button => {
+        button.addEventListener("click", () => {
+          data.expenses = data.expenses.filter(expense => expense.id !== button.dataset.delete);
+          saveData();
+          render();
+        });
+      });
+    }
+
+    function formatDate(value) {
+      return parseLocalDate(value).toLocaleDateString("en-CA", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[character]);
+    }
+
+    document.getElementById("expenseForm").addEventListener("submit", event => {
+      event.preventDefault();
+
+      const date = document.getElementById("expenseDate").value;
+      const amount = Number(document.getElementById("expenseAmount").value);
+      const description = document.getElementById("expenseDescription").value.trim();
+      const message = document.getElementById("formMessage");
+
+      if (!date || !Number.isFinite(amount) || amount < 0) {
+        message.textContent = "Enter a valid date and a non-negative amount.";
+        message.className = "note negative";
+        return;
+      }
+
+      if (date < data.startDate) {
+        message.textContent = "The spending date cannot be before your tracking start date.";
+        message.className = "note negative";
+        return;
+      }
+
+      data.expenses.push({
+        id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random(),
+        date,
+        amount: Math.round(amount * 100) / 100,
+        description,
+        createdAt: new Date().toISOString()
+      });
+
+      saveData();
+      const followingDate = nextDateString(date);
+      event.target.reset();
+      document.getElementById("expenseDate").value = followingDate;
+      message.textContent = `Spending added. Date moved to ${formatDate(followingDate)}.`;
+      message.className = "note positive";
+      render();
+    });
+
+
+    document.getElementById("addZeroDay").addEventListener("click", () => {
+      const date = document.getElementById("expenseDate").value;
+      const description = document.getElementById("expenseDescription").value.trim() || "No spending";
+      const message = document.getElementById("formMessage");
+
+      if (!date) {
+        message.textContent = "Choose a date first.";
+        message.className = "note negative";
+        return;
+      }
+
+      if (date < data.startDate) {
+        message.textContent = "The spending date cannot be before your tracking start date.";
+        message.className = "note negative";
+        return;
+      }
+
+      data.expenses.push({
+        id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random(),
+        date,
+        amount: 0,
+        description,
+        createdAt: new Date().toISOString()
+      });
+
+      saveData();
+      const followingDate = nextDateString(date);
+      document.getElementById("expenseAmount").value = "";
+      document.getElementById("expenseDescription").value = "";
+      document.getElementById("expenseDate").value = followingDate;
+      message.textContent = `$0 spending day added. Date moved to ${formatDate(followingDate)}.`;
+      message.className = "note positive";
+      render();
+    });
+
+    document.getElementById("saveSettings").addEventListener("click", () => {
+      const allowance = Number(document.getElementById("dailyAllowance").value);
+      const monthlyBudget = Number(document.getElementById("monthlyBudget").value);
+      const startDate = document.getElementById("startDate").value;
+
+      if (!Number.isFinite(allowance) || allowance <= 0 || !Number.isFinite(monthlyBudget) || monthlyBudget <= 0 || !startDate) {
+        alert("Enter a valid daily allowance, monthly budget, and start date.");
+        return;
+      }
+
+      data.dailyAllowance = Math.round(allowance * 100) / 100;
+      data.monthlyBudget = Math.round(monthlyBudget * 100) / 100;
+      data.startDate = startDate;
+      saveData();
+      render();
+    });
+
+    const resetModal = document.getElementById("resetModal");
+
+    document.getElementById("resetData").addEventListener("click", () => {
+      resetModal.classList.add("show");
+      document.getElementById("confirmReset").focus();
+    });
+
+    document.getElementById("cancelReset").addEventListener("click", () => {
+      resetModal.classList.remove("show");
+    });
+
+    resetModal.addEventListener("click", event => {
+      if (event.target === resetModal) resetModal.classList.remove("show");
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") resetModal.classList.remove("show");
+    });
+
+    document.getElementById("confirmReset").addEventListener("click", () => {
+      localStorage.removeItem(STORAGE_KEY);
+      data = createDefaultData();
+      saveData();
+
+      document.getElementById("expenseForm").reset();
+      document.getElementById("expenseDate").value = data.startDate;
+      document.getElementById("dailyAllowance").value = Number(data.dailyAllowance).toFixed(2);
+      document.getElementById("monthlyBudget").value = Number(data.monthlyBudget).toFixed(2);
+      document.getElementById("startDate").value = data.startDate;
+
+      resetModal.classList.remove("show");
+      const message = document.getElementById("formMessage");
+      message.textContent = "All data has been reset.";
+      message.className = "note positive";
+      render();
+    });
+
+    document.getElementById("expenseDate").value = localDateString();
+    document.getElementById("expenseDate").addEventListener("change", render);
+    render();
+  </script>
+</body>
+</html>
