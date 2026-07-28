@@ -392,7 +392,7 @@
   </style>
 </head>
 <body>
-  <section id="authScreen" class="auth-screen">
+  <section id="authScreen" class="auth-screen hidden">
     <div class="auth-card">
       <h1>Daily Spending Tracker</h1>
       <p class="subtitle">Sign in to access the same spending data on all of your devices.</p>
@@ -632,7 +632,12 @@ const firebaseConfig = {
   appId: "1:754423155379:web:37f9f71a9363feeb8c7ec6",
   measurementId: "G-S7NGJD65LJ"
 };
-    const firebaseConfigured = !Object.values(firebaseConfig).some(value => value.startsWith("PASTE_"));
+    const firebaseConfigured = Object.values(firebaseConfig).every(value => {
+      const normalized = String(value || "").trim();
+      return normalized &&
+        !normalized.startsWith("PASTE_") &&
+        normalized.toLowerCase() !== "blank";
+    });
 
     let app = null;
     let auth = null;
@@ -775,17 +780,19 @@ const firebaseConfig = {
         throw new Error("You are not signed in or Firestore is unavailable.");
       }
 
+      const payload = {
+        ...data,
+        updatedAt: new Date().toISOString()
+      };
+
       localStorage.setItem(
         `budgetData_${currentUser.uid}`,
-        JSON.stringify(data)
+        JSON.stringify(payload)
       );
 
       await setDoc(
         doc(db, "users", currentUser.uid),
-        {
-          ...data,
-          updatedAt: new Date().toISOString()
-        },
+        payload,
         { merge: true }
       );
     }
@@ -1165,11 +1172,13 @@ const firebaseConfig = {
 
       const userDoc = doc(db, "users", user.uid);
       const localBackupKey = `budgetData_${user.uid}`;
-      const localBackup = localStorage.getItem(localBackupKey);
+      const localBackupRaw = localStorage.getItem(localBackupKey);
+      let localBackup = null;
 
-      if (localBackup) {
+      if (localBackupRaw) {
         try {
-          data = normalizeLoadedData(JSON.parse(localBackup));
+          localBackup = normalizeLoadedData(JSON.parse(localBackupRaw));
+          data = localBackup;
           applyTheme(data.theme || "system");
 
           if (!document.getElementById("expenseDate").value) {
@@ -1179,29 +1188,34 @@ const firebaseConfig = {
           render();
         } catch (error) {
           console.error("Could not load local backup:", error);
+          localStorage.removeItem(localBackupKey);
         }
       }
 
       const firstSnapshot = await getDoc(userDoc);
 
       if (!firstSnapshot.exists()) {
-        if (!localBackup) {
-          data = defaultData();
-        }
-
-        await setDoc(userDoc, {
+        data = localBackup || defaultData();
+        const initialPayload = {
           ...data,
           email: user.email,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        });
+        };
+        await setDoc(userDoc, initialPayload);
+        localStorage.setItem(localBackupKey, JSON.stringify(initialPayload));
       } else {
-        data = normalizeLoadedData(firstSnapshot.data());
+        const remoteData = normalizeLoadedData(firstSnapshot.data());
+        const localTime = Date.parse(localBackup?.updatedAt || 0) || 0;
+        const remoteTime = Date.parse(remoteData.updatedAt || 0) || 0;
 
-        localStorage.setItem(
-          localBackupKey,
-          JSON.stringify(data)
-        );
+        if (localBackup && localTime > remoteTime) {
+          data = localBackup;
+          await setDoc(userDoc, localBackup, { merge: true });
+        } else {
+          data = remoteData;
+          localStorage.setItem(localBackupKey, JSON.stringify(remoteData));
+        }
       }
 
       unsubscribeUserData = onSnapshot(
@@ -1209,12 +1223,14 @@ const firebaseConfig = {
         snapshot => {
           if (!snapshot.exists()) return;
 
-          data = normalizeLoadedData(snapshot.data());
+          const incoming = normalizeLoadedData(snapshot.data());
+          const incomingTime = Date.parse(incoming.updatedAt || 0) || 0;
+          const currentTime = Date.parse(data.updatedAt || 0) || 0;
 
-          localStorage.setItem(
-            localBackupKey,
-            JSON.stringify(data)
-          );
+          if (incomingTime >= currentTime) {
+            data = incoming;
+            localStorage.setItem(localBackupKey, JSON.stringify(data));
+          }
 
           if (!document.getElementById("expenseDate").value) {
             document.getElementById("expenseDate").value = localDateString();
@@ -1233,6 +1249,7 @@ const firebaseConfig = {
     }
 
     if (!firebaseConfigured) {
+      authScreen.classList.remove("hidden");
       firebaseWarning.classList.remove("hidden");
       applyTheme("system");
     } else {
@@ -1267,6 +1284,7 @@ const firebaseConfig = {
           }
         });
       } catch (error) {
+        authScreen.classList.remove("hidden");
         firebaseWarning.classList.remove("hidden");
         showStatus(document.getElementById("authMessage"), friendlyFirebaseError(error), "error");
       }
