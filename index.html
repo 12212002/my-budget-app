@@ -50,7 +50,6 @@
       font-family: Arial, Helvetica, sans-serif;
       background: var(--bg);
       color: var(--text);
-      transition: background 0.2s ease, color 0.2s ease;
     }
 
     button, input, select { font: inherit; }
@@ -147,7 +146,7 @@
 
     .form-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 2fr auto;
+      grid-template-columns: 1fr 1fr 1.4fr 1fr auto;
       gap: 12px;
       align-items: end;
     }
@@ -375,24 +374,81 @@
       font-size: 14px;
     }
 
+
+
+    /* ===== Analytics dashboard ===== */
+    .main-nav { display:flex; gap:10px; margin-bottom:20px; }
+    .main-nav button { width:auto; min-width:140px; }
+    .main-nav button.active { background:var(--accent); color:#fff; }
+    .page-section.hidden { display:none !important; }
+    .dashboard-controls { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; align-items:end; }
+    .dashboard-controls .control-actions { display:flex; gap:8px; }
+    .dashboard-controls .control-actions button { min-width:0; }
+    .custom-range { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+    .analytics-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+    .analytics-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; }
+    .analytics-card .value { font-size:24px; }
+    .dashboard-layout { display:grid; grid-template-columns:2fr 1fr; gap:18px; }
+    .chart-card { min-width:0; }
+    .chart-wrap { position:relative; min-height:320px; }
+    .chart-wrap.small { min-height:260px; }
+    .chart-toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .segmented { display:flex; flex-wrap:wrap; gap:6px; }
+    .segmented button { width:auto; min-height:36px; padding:7px 11px; font-size:13px; }
+    .segmented button.active { background:var(--accent); color:#fff; }
+    .metric-row { display:flex; justify-content:space-between; gap:16px; padding:9px 0; border-bottom:1px solid var(--border); }
+    .metric-row:last-child { border-bottom:0; }
+    .progress-track { height:12px; border-radius:999px; background:var(--border); overflow:hidden; margin-top:9px; }
+    .progress-fill { height:100%; width:0; background:var(--accent); border-radius:inherit; }
+    .heatmap-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .heatmap-header button { width:auto; }
+    .heatmap { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+    .heatmap-day { aspect-ratio:1; min-width:0; border:1px solid var(--border); border-radius:8px; background:var(--input-bg); color:var(--text); padding:4px; font-size:12px; display:flex; flex-direction:column; justify-content:space-between; }
+    .heatmap-day.blank { visibility:hidden; }
+    .heatmap-day[data-level="1"] { background:color-mix(in srgb,var(--accent) 15%,var(--card)); }
+    .heatmap-day[data-level="2"] { background:color-mix(in srgb,var(--accent) 30%,var(--card)); }
+    .heatmap-day[data-level="3"] { background:color-mix(in srgb,var(--accent) 50%,var(--card)); color:#fff; }
+    .heatmap-day[data-level="4"] { background:color-mix(in srgb,var(--accent) 75%,#000); color:#fff; }
+    .heatmap-day .day-total { font-size:10px; overflow:hidden; text-overflow:ellipsis; }
+    .category-list { max-height:340px; overflow:auto; }
+    .category-button { width:100%; display:flex; justify-content:space-between; gap:12px; background:transparent; color:var(--text); border-bottom:1px solid var(--border); border-radius:0; text-align:left; }
+    .category-button.active { background:var(--soft-accent); color:var(--soft-accent-text); }
+    .prediction-list { display:grid; gap:10px; }
+    .prediction { background:var(--soft-accent); color:var(--soft-accent-text); border-radius:10px; padding:12px; line-height:1.45; }
+    .details-table { width:100%; min-width:620px; }
+    .dashboard-empty { padding:28px; text-align:center; color:var(--muted); }
+    .export-row { display:flex; flex-wrap:wrap; gap:10px; }
+    .export-row button { width:auto; }
+    @media print {
+      body * { visibility:hidden; }
+      #dashboardPage, #dashboardPage * { visibility:visible; }
+      #dashboardPage { position:absolute; inset:0; }
+      .no-print { display:none !important; }
+      .card { box-shadow:none; break-inside:avoid; }
+    }
+
     @media (max-width: 760px) {
       .container { width: min(100% - 20px, 1000px); margin: 18px auto; }
       .app-header { align-items: center; }
       .account-chip { display: none; }
       .grid { grid-template-columns: 1fr 1fr; }
-      .form-grid, .settings-grid { grid-template-columns: 1fr; }
+      .form-grid, .settings-grid, .dashboard-controls, .dashboard-layout { grid-template-columns: 1fr; }
+      .analytics-grid { grid-template-columns:1fr 1fr; }
+      .custom-range { grid-template-columns:1fr; }
       .full-width { grid-column: auto; }
     }
 
     @media (max-width: 450px) {
-      .grid { grid-template-columns: 1fr; }
+      .grid, .analytics-grid { grid-template-columns: 1fr; }
+      .main-nav { display:grid; grid-template-columns:1fr 1fr; }
+      .main-nav button { width:100%; min-width:0; }
       .modal-actions { flex-direction: column-reverse; }
       .modal-actions button { width: 100%; }
     }
   </style>
 </head>
 <body>
-  <section id="authScreen" class="auth-screen hidden">
+  <section id="authScreen" class="auth-screen">
     <div class="auth-card">
       <h1>Daily Spending Tracker</h1>
       <p class="subtitle">Sign in to access the same spending data on all of your devices.</p>
@@ -445,6 +501,12 @@
       </div>
     </header>
 
+    <nav class="main-nav" aria-label="Main navigation">
+      <button id="showTrackerPage" class="secondary active" type="button">Tracker</button>
+      <button id="showDashboardPage" class="secondary" type="button">Dashboard</button>
+    </nav>
+
+    <section id="trackerPage" class="page-section">
     <section class="grid">
       <div class="card">
         <div class="label">Available on Selected Day</div>
@@ -485,6 +547,21 @@
           <input id="expenseDescription" type="text" maxlength="80" placeholder="Coffee, lunch, shopping..." />
         </div>
 
+        <div>
+          <label for="expenseCategory">Category</label>
+          <select id="expenseCategory" required>
+            <option value="">Select a category</option>
+            <option value="Fast Food">Fast Food</option>
+            <option value="Restaurant">Restaurant</option>
+            <option value="Groceries">Groceries</option>
+            <option value="Parking">Parking</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Travel">Travel</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
         <div class="button-stack">
           <button type="submit" class="primary">Add Spending</button>
           <button type="button" id="addZeroDay" class="secondary">Add $0 Day</button>
@@ -512,6 +589,57 @@
         </table>
       </div>
       <div id="emptyState" class="empty">No spending has been added yet.</div>
+    </section>
+    </section>
+
+    <section id="dashboardPage" class="page-section hidden">
+      <section class="card no-print">
+        <h2 class="section-title">Dashboard Filters</h2>
+        <div class="dashboard-controls">
+          <div><label for="dashboardDateFilter">Date range</label><select id="dashboardDateFilter"><option value="today">Today</option><option value="7days">Last 7 days</option><option value="30days">Last 30 days</option><option value="thisMonth" selected>This month</option><option value="lastMonth">Last month</option><option value="thisYear">This year</option><option value="all">All time</option><option value="custom">Custom range</option></select></div>
+          <div><label for="dashboardGroupView">Group by</label><select id="dashboardGroupView"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option><option value="year">Year</option></select></div>
+          <div><label for="dashboardChartType">Chart type</label><select id="dashboardChartType"><option value="line">Line</option><option value="bar">Bar</option></select></div>
+          <div><label for="dashboardCategoryFilter">Category</label><select id="dashboardCategoryFilter"><option value="all">All categories</option></select></div>
+          <div class="control-actions"><button id="resetDashboardFilters" class="secondary" type="button">Reset</button></div>
+        </div>
+        <div id="customDateRange" class="custom-range hidden"><div><label for="dashboardStartDate">Start date</label><input id="dashboardStartDate" type="date"></div><div><label for="dashboardEndDate">End date</label><input id="dashboardEndDate" type="date"></div></div>
+      </section>
+
+      <div class="spacer"></div>
+      <section id="dashboardSummary" class="analytics-grid"></section>
+      <div class="spacer"></div>
+
+      <section class="card chart-card"><div class="chart-toolbar"><h2 class="section-title">Spending Over Time</h2><span id="dashboardRangeLabel" class="note"></span></div><div class="chart-wrap"><canvas id="spendingChart"></canvas></div></section>
+      <div class="spacer"></div>
+
+      <div class="dashboard-layout">
+        <section class="card chart-card"><h2 class="section-title">Budget vs Actual</h2><div id="budgetMessage" class="note"></div><div class="chart-wrap small"><canvas id="budgetChart"></canvas></div><div id="budgetMetrics"></div></section>
+        <section class="card"><h2 class="section-title">Budget Progress</h2><div id="budgetProgress"></div></section>
+      </div>
+      <div class="spacer"></div>
+
+      <section class="card chart-card"><h2 class="section-title">Running Surplus / Deficit</h2><div class="chart-wrap"><canvas id="balanceChart"></canvas></div></section>
+      <div class="spacer"></div>
+
+      <div class="dashboard-layout">
+        <section class="card chart-card"><h2 class="section-title">Spending by Category</h2><div class="chart-wrap small"><canvas id="categoryChart"></canvas></div></section>
+        <section class="card"><h2 class="section-title">Category Details</h2><div id="categoryList" class="category-list"></div></section>
+      </div>
+      <div class="spacer"></div>
+
+      <div class="dashboard-layout">
+        <section class="card chart-card"><h2 class="section-title">Monthly Comparison</h2><div class="chart-wrap small"><canvas id="monthlyChart"></canvas></div><div id="monthlyComparisonText" class="note"></div></section>
+        <section class="card"><div class="heatmap-header"><button id="heatmapPrev" class="secondary" type="button">←</button><h2 id="heatmapTitle" class="section-title"></h2><button id="heatmapNext" class="secondary" type="button">→</button></div><div id="heatmap" class="heatmap"></div></section>
+      </div>
+      <div class="spacer"></div>
+
+      <div class="dashboard-layout">
+        <section class="card"><h2 class="section-title">Spending Streaks</h2><div id="streakMetrics"></div></section>
+        <section class="card"><h2 class="section-title">Predictions <span class="note">(estimates)</span></h2><div id="predictions" class="prediction-list"></div></section>
+      </div>
+      <div class="spacer"></div>
+
+      <section class="card no-print"><h2 class="section-title">Export Tools</h2><div class="export-row"><button id="exportTransactionsCsv" class="secondary" type="button">Export Filtered Transactions</button><button id="exportDashboardCsv" class="secondary" type="button">Export Dashboard Data</button><button id="printDashboard" class="primary" type="button">Print / Save PDF</button></div></section>
     </section>
   </main>
 
@@ -569,6 +697,46 @@
     </div>
   </div>
 
+
+  <div id="editTransactionModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="editTransactionTitle">
+    <div class="modal">
+      <h2 id="editTransactionTitle">Edit Spending</h2>
+      <div class="settings-grid">
+        <div>
+          <label for="editExpenseDate">Date</label>
+          <input id="editExpenseDate" type="date" required />
+        </div>
+        <div>
+          <label for="editExpenseAmount">Amount</label>
+          <input id="editExpenseAmount" type="number" min="0" step="0.01" required />
+        </div>
+        <div class="full-width">
+          <label for="editExpenseDescription">Description</label>
+          <input id="editExpenseDescription" type="text" maxlength="80" />
+        </div>
+        <div class="full-width">
+          <label for="editExpenseCategory">Category</label>
+          <select id="editExpenseCategory" required>
+            <option value="">Select a category</option>
+            <option value="Fast Food">Fast Food</option>
+            <option value="Restaurant">Restaurant</option>
+            <option value="Groceries">Groceries</option>
+            <option value="Parking">Parking</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Travel">Travel</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div id="editTransactionMessage" class="status"></div>
+      <div class="modal-actions">
+        <button id="cancelEditTransaction" class="secondary" type="button">Cancel</button>
+        <button id="saveEditTransaction" class="primary" type="button">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <div id="deleteTransactionModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="deleteTransactionTitle">
     <div class="modal">
       <h2 id="deleteTransactionTitle" class="negative">Delete Transaction?</h2>
@@ -596,7 +764,24 @@
     </div>
   </div>
 
+
+  <div id="transactionDetailsModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="transactionDetailsTitle">
+    <div class="modal" style="width:min(850px,100%)">
+      <h2 id="transactionDetailsTitle">Transaction Details</h2>
+      <p id="transactionDetailsSummary"></p>
+      <div class="table-wrap"><table class="details-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="amount">Amount</th></tr></thead><tbody id="transactionDetailsBody"></tbody></table></div>
+      <div id="transactionDetailsEmpty" class="empty hidden">No matching transactions.</div>
+      <div class="modal-actions"><button id="closeTransactionDetails" class="secondary" type="button">Close</button></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script type="module">
+    // Dashboard animations are disabled to prevent visual glitches.
+    if (window.Chart) {
+      Chart.defaults.animation = false;
+      Chart.defaults.transitions = { active: { animation: { duration: 0 } }, resize: { animation: { duration: 0 } }, show: { animations: {} }, hide: { animations: {} } };
+    }
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
     import {
       getAuth,
@@ -632,12 +817,7 @@ const firebaseConfig = {
   appId: "1:754423155379:web:37f9f71a9363feeb8c7ec6",
   measurementId: "G-S7NGJD65LJ"
 };
-    const firebaseConfigured = Object.values(firebaseConfig).every(value => {
-      const normalized = String(value || "").trim();
-      return normalized &&
-        !normalized.startsWith("PASTE_") &&
-        normalized.toLowerCase() !== "blank";
-    });
+    const firebaseConfigured = !Object.values(firebaseConfig).some(value => value.startsWith("PASTE_"));
 
     let app = null;
     let auth = null;
@@ -646,6 +826,7 @@ const firebaseConfig = {
     let unsubscribeUserData = null;
     let authMode = "signin";
     let pendingDeleteExpenseId = null;
+    let pendingEditExpenseId = null;
     let saveTimer = null;
 
     const defaultData = () => ({
@@ -653,6 +834,7 @@ const firebaseConfig = {
       monthlyBudget: 400,
       startDate: localDateString(),
       theme: "system",
+      dashboardPreferences: { dateFilter: "thisMonth", groupView: "day", chartType: "line", category: "all" },
       expenses: []
     });
 
@@ -662,8 +844,12 @@ const firebaseConfig = {
     const appScreen = document.getElementById("appScreen");
     const firebaseWarning = document.getElementById("firebaseWarning");
     const settingsModal = document.getElementById("settingsModal");
+    const editTransactionModal = document.getElementById("editTransactionModal");
     const deleteTransactionModal = document.getElementById("deleteTransactionModal");
     const deleteAccountModal = document.getElementById("deleteAccountModal");
+    const transactionDetailsModal = document.getElementById("transactionDetailsModal");
+    let dashboardCharts = {};
+    let heatmapMonth = new Date();
 
     function localDateString(date = new Date()) {
       const year = date.getFullYear();
@@ -780,19 +966,17 @@ const firebaseConfig = {
         throw new Error("You are not signed in or Firestore is unavailable.");
       }
 
-      const payload = {
-        ...data,
-        updatedAt: new Date().toISOString()
-      };
-
       localStorage.setItem(
         `budgetData_${currentUser.uid}`,
-        JSON.stringify(payload)
+        JSON.stringify(data)
       );
 
       await setDoc(
         doc(db, "users", currentUser.uid),
-        payload,
+        {
+          ...data,
+          updatedAt: new Date().toISOString()
+        },
         { merge: true }
       );
     }
@@ -814,7 +998,8 @@ const firebaseConfig = {
         ...saved,
         dailyAllowance: Number(saved?.dailyAllowance ?? 10),
         monthlyBudget: Number(saved?.monthlyBudget ?? 400),
-        expenses: Array.isArray(saved?.expenses) ? saved.expenses : []
+        dashboardPreferences: { ...defaultData().dashboardPreferences, ...(saved?.dashboardPreferences || {}) },
+        expenses: Array.isArray(saved?.expenses) ? saved.expenses.map(expense => ({ ...expense, category: expense.category || "Uncategorized" })) : []
       };
     }
 
@@ -843,6 +1028,8 @@ const firebaseConfig = {
 
       applyTheme(data.theme || "system");
       renderHistory();
+      refreshCategorySuggestions();
+      if (!document.getElementById("dashboardPage").classList.contains("hidden")) renderDashboard();
     }
 
     function renderHistory() {
@@ -875,6 +1062,7 @@ const firebaseConfig = {
           <td class="amount ${balanceAfter >= 0 ? "positive" : "negative"}">${currency(balanceAfter)}</td>
           <td class="amount">
             <div class="actions">
+              <button type="button" class="secondary" data-edit-id="${escapeHtml(expense.id)}">Edit</button>
               <button type="button" class="danger" data-delete-id="${escapeHtml(expense.id)}">Delete</button>
             </div>
           </td>
@@ -884,15 +1072,92 @@ const firebaseConfig = {
     }
 
     document.getElementById("historyBody").addEventListener("click", event => {
-      const button = event.target.closest("[data-delete-id]");
-      if (!button) return;
+      const editButton = event.target.closest("[data-edit-id]");
+      if (editButton) {
+        pendingEditExpenseId = editButton.dataset.editId;
+        const expense = data.expenses.find(item => item.id === pendingEditExpenseId);
+        if (!expense) return;
 
-      pendingDeleteExpenseId = button.dataset.deleteId;
+        document.getElementById("editExpenseDate").value = expense.date || localDateString();
+        document.getElementById("editExpenseAmount").value = Number(expense.amount).toFixed(2);
+        document.getElementById("editExpenseDescription").value = expense.description || "";
+        {
+          const allowedCategories = ["Fast Food", "Restaurant", "Groceries", "Parking", "Shopping", "Entertainment", "Travel", "Other"];
+          document.getElementById("editExpenseCategory").value =
+            allowedCategories.includes(expense.category) ? expense.category : "Other";
+        }
+        clearStatus(document.getElementById("editTransactionMessage"));
+        editTransactionModal.classList.add("show");
+        return;
+      }
+
+      const deleteButton = event.target.closest("[data-delete-id]");
+      if (!deleteButton) return;
+
+      pendingDeleteExpenseId = deleteButton.dataset.deleteId;
       const expense = data.expenses.find(item => item.id === pendingDeleteExpenseId);
       document.getElementById("deleteTransactionText").textContent = expense
         ? `Delete ${currency(expense.amount)} from ${formatDate(expense.date)}? It will no longer count toward any totals, surplus, or deficit.`
         : "This transaction will be removed and all totals will be recalculated.";
       deleteTransactionModal.classList.add("show");
+    });
+
+    document.getElementById("cancelEditTransaction").addEventListener("click", () => {
+      pendingEditExpenseId = null;
+      editTransactionModal.classList.remove("show");
+    });
+
+    editTransactionModal.addEventListener("click", event => {
+      if (event.target === editTransactionModal) {
+        pendingEditExpenseId = null;
+        editTransactionModal.classList.remove("show");
+      }
+    });
+
+    document.getElementById("saveEditTransaction").addEventListener("click", async () => {
+      if (!pendingEditExpenseId) return;
+
+      const date = document.getElementById("editExpenseDate").value;
+      const amount = Number(document.getElementById("editExpenseAmount").value);
+      const description = document.getElementById("editExpenseDescription").value.trim();
+      const category = document.getElementById("editExpenseCategory").value || "Other";
+      const message = document.getElementById("editTransactionMessage");
+      const button = document.getElementById("saveEditTransaction");
+
+      if (!date || !Number.isFinite(amount) || amount < 0) {
+        showStatus(message, "Enter a valid date and a non-negative amount.", "error");
+        return;
+      }
+
+      if (date < data.startDate) {
+        showStatus(message, "The spending date cannot be before your tracking start date.", "error");
+        return;
+      }
+
+      const expense = data.expenses.find(item => item.id === pendingEditExpenseId);
+      if (!expense) {
+        showStatus(message, "This transaction could not be found.", "error");
+        return;
+      }
+
+      expense.date = date;
+      expense.amount = Math.round(amount * 100) / 100;
+      expense.description = description;
+      expense.category = category;
+      expense.updatedAt = new Date().toISOString();
+
+      button.disabled = true;
+      try {
+        await saveDataNow();
+        pendingEditExpenseId = null;
+        editTransactionModal.classList.remove("show");
+        render();
+        showStatus(document.getElementById("formMessage"), "Spending entry updated.", "success");
+      } catch (error) {
+        showStatus(message, friendlyFirebaseError(error), "error");
+      } finally {
+        button.disabled = false;
+      }
     });
 
     document.getElementById("cancelDeleteTransaction").addEventListener("click", () => {
@@ -915,6 +1180,7 @@ const firebaseConfig = {
       const date = document.getElementById("expenseDate").value;
       const amount = Number(document.getElementById("expenseAmount").value);
       const description = document.getElementById("expenseDescription").value.trim();
+      const category = document.getElementById("expenseCategory").value || "Other";
       const message = document.getElementById("formMessage");
 
       if (!date || !Number.isFinite(amount) || amount < 0) {
@@ -932,11 +1198,13 @@ const firebaseConfig = {
         date,
         amount: Math.round(amount * 100) / 100,
         description,
+        category,
         createdAt: new Date().toISOString()
       });
 
       document.getElementById("expenseAmount").value = "";
       document.getElementById("expenseDescription").value = "";
+      document.getElementById("expenseCategory").value = "";
       document.getElementById("expenseDate").value = localDateString();
       render();
 
@@ -968,11 +1236,13 @@ const firebaseConfig = {
         date,
         amount: 0,
         description,
+        category: "No Spending",
         createdAt: new Date().toISOString()
       });
 
       document.getElementById("expenseAmount").value = "";
       document.getElementById("expenseDescription").value = "";
+      document.getElementById("expenseCategory").value = "";
       document.getElementById("expenseDate").value = localDateString();
       render();
 
@@ -1058,6 +1328,7 @@ const firebaseConfig = {
 
     document.getElementById("cancelDeleteAccount").addEventListener("click", () => {
       deleteAccountModal.classList.remove("show");
+      transactionDetailsModal.classList.remove("show");
     });
 
     document.getElementById("confirmDeleteAccount").addEventListener("click", async () => {
@@ -1161,9 +1432,84 @@ const firebaseConfig = {
     document.addEventListener("keydown", event => {
       if (event.key !== "Escape") return;
       settingsModal.classList.remove("show");
+      editTransactionModal.classList.remove("show");
+      pendingEditExpenseId = null;
       deleteTransactionModal.classList.remove("show");
       deleteAccountModal.classList.remove("show");
     });
+
+
+    /* ===== Analytics dashboard logic ===== */
+    function refreshCategorySuggestions() {
+      const categories = [...new Set(data.expenses.map(e => (e.category || "Uncategorized").trim()).filter(Boolean))].sort();
+      const select = document.getElementById("dashboardCategoryFilter");
+      const current = select.value || data.dashboardPreferences.category || "all";
+      select.innerHTML = `<option value="all">All categories</option>` + categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      select.value = categories.includes(current) || current === "all" ? current : "all";
+    }
+
+    function dateAdd(dateString, days) { const d=parseLocalDate(dateString); d.setDate(d.getDate()+days); return localDateString(d); }
+    function startOfWeek(dateString) { const d=parseLocalDate(dateString); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); return localDateString(d); }
+    function getDateRange() {
+      const filter=document.getElementById("dashboardDateFilter").value; const today=localDateString(); const now=parseLocalDate(today);
+      let start=today,end=today;
+      if(filter==="7days") start=dateAdd(today,-6);
+      else if(filter==="30days") start=dateAdd(today,-29);
+      else if(filter==="thisMonth") { start=`${today.slice(0,7)}-01`; const d=new Date(now.getFullYear(),now.getMonth()+1,0); end=localDateString(d); }
+      else if(filter==="lastMonth") { const d1=new Date(now.getFullYear(),now.getMonth()-1,1); const d2=new Date(now.getFullYear(),now.getMonth(),0); start=localDateString(d1); end=localDateString(d2); }
+      else if(filter==="thisYear") { start=`${now.getFullYear()}-01-01`; end=`${now.getFullYear()}-12-31`; }
+      else if(filter==="all") { const dates=data.expenses.map(e=>e.date).filter(Boolean).sort(); start=dates[0]||data.startDate||today; end=dates.at(-1)||today; }
+      else if(filter==="custom") { start=document.getElementById("dashboardStartDate").value||today; end=document.getElementById("dashboardEndDate").value||today; if(start>end) [start,end]=[end,start]; }
+      return {start,end,filter};
+    }
+    function filteredExpenses() { const {start,end}=getDateRange(); const cat=document.getElementById("dashboardCategoryFilter").value; return data.expenses.filter(e=>e.date>=start&&e.date<=end&&Number(e.amount)>=0&&(cat==="all"||(e.category||"Uncategorized")===cat)); }
+    function eachDate(start,end) { const out=[]; for(let d=start;d<=end;d=dateAdd(d,1)) out.push(d); return out; }
+    function groupExpenses(expenses,view) { const map=new Map(); expenses.forEach(e=>{ let key=e.date; if(view==="week") key=startOfWeek(e.date); else if(view==="month") key=e.date.slice(0,7); else if(view==="year") key=e.date.slice(0,4); const x=map.get(key)||{key,total:0,count:0,items:[]}; x.total+=Number(e.amount); x.count++; x.items.push(e); map.set(key,x); }); return [...map.values()].sort((a,b)=>a.key.localeCompare(b.key)); }
+    function destroyChart(name){ if(dashboardCharts[name]){ dashboardCharts[name].destroy(); delete dashboardCharts[name]; } }
+    function chartColours(){ const css=getComputedStyle(document.documentElement); return {accent:css.getPropertyValue('--accent').trim(),positive:css.getPropertyValue('--positive').trim(),negative:css.getPropertyValue('--negative').trim(),text:css.getPropertyValue('--text').trim(),border:css.getPropertyValue('--border').trim()}; }
+    function baseChartOptions(onClick){ const c=chartColours(); return {responsive:true,maintainAspectRatio:false,animation:false,animations:{},events:["mousemove","mouseout","click","touchstart","touchmove"],interaction:{mode:"nearest",axis:"xy",intersect:true},hover:{mode:"nearest",intersect:true},plugins:{legend:{labels:{color:c.text}},tooltip:{enabled:true,mode:"nearest",intersect:true,animation:false,callbacks:{afterLabel(ctx){const raw=ctx.rawDetail; return raw?`Purchases: ${raw.count}\nAverage: ${currency(raw.count?raw.total/raw.count:0)}`:"";}}}},scales:{x:{ticks:{color:c.text},grid:{color:c.border}},y:{ticks:{color:c.text,callback:v=>currency(v)},grid:{color:c.border}}},onClick}; }
+    function openDetails(items,title){ document.getElementById("transactionDetailsTitle").textContent=title||"Transaction Details"; document.getElementById("transactionDetailsSummary").textContent=`${items.length} transaction${items.length===1?"":"s"} · ${currency(items.reduce((s,e)=>s+Number(e.amount),0))}`; const body=document.getElementById("transactionDetailsBody"); body.innerHTML=items.sort((a,b)=>a.date.localeCompare(b.date)).map(e=>`<tr><td>${formatDate(e.date)}</td><td>${escapeHtml(e.description||"Spending")}</td><td>${escapeHtml(e.category||"Uncategorized")}</td><td class="amount">${currency(e.amount)}</td></tr>`).join(""); document.getElementById("transactionDetailsEmpty").classList.toggle("hidden",items.length>0); transactionDetailsModal.classList.add("show"); }
+    function streakStats(start,end){ const all=eachDate(start,end); const sums=Object.fromEntries(all.map(d=>[d,0])); data.expenses.filter(e=>e.date>=start&&e.date<=end).forEach(e=>sums[e.date]=(sums[e.date]||0)+Number(e.amount)); const calc=pred=>{let longest=0,current=0,run=0; all.forEach(d=>{if(pred(sums[d]||0)){run++;longest=Math.max(longest,run)}else run=0}); for(let i=all.length-1;i>=0&&pred(sums[all[i]]||0);i--) current++; return {current,longest};}; return {noSpend:calc(v=>v===0),under:calc(v=>v<=Number(data.dailyAllowance)),spending:calc(v=>v>0),overDays:all.filter(d=>(sums[d]||0)>Number(data.dailyAllowance)).length}; }
+    function summaryCard(label,value,cls=""){ return `<div class="analytics-card"><div class="label">${label}</div><div class="value ${cls}">${value}</div></div>`; }
+    function renderDashboard(){
+      refreshCategorySuggestions(); const prefs=data.dashboardPreferences||defaultData().dashboardPreferences; const expenses=filteredExpenses(); const {start,end}=getDateRange(); const days=Math.max(1,daysInclusive(start,end)); const total=expenses.reduce((s,e)=>s+Number(e.amount),0); const positive=expenses.filter(e=>Number(e.amount)>0); const amounts=positive.map(e=>Number(e.amount)); const streaks=streakStats(start,end); const budget=Number(data.dailyAllowance)*days;
+      document.getElementById("dashboardRangeLabel").textContent=`${formatDate(start)} – ${formatDate(end)}`;
+      document.getElementById("dashboardSummary").innerHTML=[summaryCard("Total spent",currency(total)),summaryCard("Average per day",currency(total/days)),summaryCard("Average transaction",currency(positive.length?total/positive.length:0)),summaryCard("Largest purchase",currency(amounts.length?Math.max(...amounts):0)),summaryCard("Smallest purchase",currency(amounts.length?Math.min(...amounts):0)),summaryCard("Total purchases",String(positive.length)),summaryCard("Days under budget",String(eachDate(start,end).filter(d=>data.expenses.filter(e=>e.date===d).reduce((s,e)=>s+Number(e.amount),0)<=Number(data.dailyAllowance)).length),"positive"),summaryCard("Days over budget",String(streaks.overDays),streaks.overDays?"negative":"positive"),summaryCard("Current no-spend streak",`${streaks.noSpend.current} days`),summaryCard("Longest no-spend streak",`${streaks.noSpend.longest} days`)].join("");
+      renderSpendingChart(expenses); renderBudgetChart(start,end); renderBalanceChart(start,end); renderCategoryChart(expenses); renderMonthlyChart(); renderHeatmap(); renderStreaks(streaks); renderPredictions();
+      data.dashboardPreferences={dateFilter:document.getElementById("dashboardDateFilter").value,groupView:document.getElementById("dashboardGroupView").value,chartType:document.getElementById("dashboardChartType").value,category:document.getElementById("dashboardCategoryFilter").value};
+    }
+    function renderSpendingChart(expenses){ destroyChart("spending"); const view=document.getElementById("dashboardGroupView").value; const groups=groupExpenses(expenses,view); const c=chartColours(); const details=groups.map(g=>({total:g.total,count:g.count,items:g.items})); dashboardCharts.spending=new Chart(document.getElementById("spendingChart"),{type:document.getElementById("dashboardChartType").value,data:{labels:groups.map(g=>view==="day"?formatDate(g.key):g.key),datasets:[{label:"Spending",data:groups.map((g,i)=>Object.assign(new Number(g.total),{rawDetail:details[i]})),borderColor:c.accent,backgroundColor:c.accent,tension:.25}]},options:{...baseChartOptions((evt,elements)=>{if(elements[0])openDetails(groups[elements[0].index].items,`Spending: ${groups[elements[0].index].key}`)}),plugins:{...baseChartOptions().plugins,tooltip:{callbacks:{label:ctx=>`Spent: ${currency(ctx.parsed.y)}`,afterLabel:ctx=>{const g=groups[ctx.dataIndex];return `Purchases: ${g.count}\nAverage: ${currency(g.count?g.total/g.count:0)}`}}}}}}); }
+    function renderBudgetChart(start,end){ destroyChart("budget"); const dates=eachDate(start,end); const actual=dates.map(d=>data.expenses.filter(e=>e.date===d).reduce((s,e)=>s+Number(e.amount),0)); const allowance=dates.map(()=>Number(data.dailyAllowance)); const total=actual.reduce((a,b)=>a+b,0),budget=allowance.reduce((a,b)=>a+b,0),remaining=budget-total,pct=budget?total/budget*100:0,c=chartColours(); document.getElementById("budgetMessage").textContent=Number(data.dailyAllowance)>0?"":"Set a daily allowance in Settings to view budget comparisons."; document.getElementById("budgetMetrics").innerHTML=`<div class="metric-row"><span>Total budget</span><strong>${currency(budget)}</strong></div><div class="metric-row"><span>Actual spending</span><strong>${currency(total)}</strong></div><div class="metric-row"><span>${remaining>=0?"Remaining":"Over budget"}</span><strong class="${remaining>=0?"positive":"negative"}">${currency(Math.abs(remaining))}</strong></div><div class="metric-row"><span>Budget used</span><strong>${pct.toFixed(1)}%</strong></div>`; document.getElementById("budgetProgress").innerHTML=`<div class="label">Selected-period budget</div><div class="value">${currency(total)} / ${currency(budget)}</div><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,Math.max(0,pct))}%"></div></div><p class="note">${remaining>=0?`${currency(remaining)} remaining`:`${currency(-remaining)} over budget`}</p><hr class="divider"><div class="label">Monthly budget</div><div class="value">${currency(monthSpentFor(localDateString()))} / ${currency(data.monthlyBudget)}</div><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,monthSpentFor(localDateString())/Number(data.monthlyBudget)*100||0)}%"></div></div>`; dashboardCharts.budget=new Chart(document.getElementById("budgetChart"),{type:"bar",data:{labels:dates.map(formatDate),datasets:[{label:"Daily allowance",data:allowance,backgroundColor:c.positive},{label:"Actual",data:actual,backgroundColor:c.accent}]},options:baseChartOptions((evt,els)=>{if(els[0]){const d=dates[els[0].index];openDetails(data.expenses.filter(e=>e.date===d),formatDate(d));}})}); }
+    function renderBalanceChart(start,end){ destroyChart("balance"); const dates=eachDate(start,end); let running=0; const values=dates.map(d=>{running+=Number(data.dailyAllowance)-data.expenses.filter(e=>e.date===d).reduce((s,e)=>s+Number(e.amount),0);return running}); const c=chartColours(); dashboardCharts.balance=new Chart(document.getElementById("balanceChart"),{type:"line",data:{labels:dates.map(formatDate),datasets:[{label:"Running budget position",data:values,borderColor:c.accent,backgroundColor:c.accent,tension:.2,fill:false}]},options:baseChartOptions()}); }
+    function renderCategoryChart(expenses){ destroyChart("category"); const map=new Map(); expenses.forEach(e=>{const k=e.category||"Uncategorized"; const x=map.get(k)||{total:0,count:0,items:[]};x.total+=Number(e.amount);x.count++;x.items.push(e);map.set(k,x)}); const rows=[...map.entries()].sort((a,b)=>b[1].total-a[1].total),total=rows.reduce((s,r)=>s+r[1].total,0); document.getElementById("categoryList").innerHTML=`<button class="category-button ${document.getElementById("dashboardCategoryFilter").value==="all"?"active":""}" data-category="all"><span>All categories</span><strong>${currency(total)}</strong></button>`+rows.map(([k,v])=>`<button class="category-button ${document.getElementById("dashboardCategoryFilter").value===k?"active":""}" data-category="${escapeHtml(k)}"><span>${escapeHtml(k)}<small class="note"> ${v.count} purchases · ${total?(v.total/total*100).toFixed(1):0}%</small></span><strong>${currency(v.total)}</strong></button>`).join(""); const c=chartColours(); dashboardCharts.category=new Chart(document.getElementById("categoryChart"),{type:"doughnut",data:{labels:rows.map(r=>r[0]),datasets:[{data:rows.map(r=>r[1].total),backgroundColor:rows.map((_,i)=>`hsl(${(i*57)%360} 65% 55%)`)}]},options:{responsive:true,maintainAspectRatio:false,animation:false,animations:{},events:["mousemove","mouseout","click","touchstart","touchmove"],interaction:{mode:"nearest",axis:"xy",intersect:true},hover:{mode:"nearest",intersect:true},plugins:{legend:{position:"bottom",labels:{color:c.text}},tooltip:{enabled:true,mode:"nearest",intersect:true,animation:false}},onClick:(evt,els)=>{if(els[0])openDetails(rows[els[0].index][1].items,rows[els[0].index][0])}}}); }
+    function renderMonthlyChart(){ destroyChart("monthly"); const groups=groupExpenses(data.expenses,"month").slice(-12),c=chartColours(); dashboardCharts.monthly=new Chart(document.getElementById("monthlyChart"),{type:"bar",data:{labels:groups.map(g=>g.key),datasets:[{label:"Monthly spending",data:groups.map(g=>g.total),backgroundColor:c.accent}]},options:baseChartOptions((evt,els)=>{if(els[0])openDetails(groups[els[0].index].items,groups[els[0].index].key)})}); const current=groups.at(-1),prev=groups.at(-2); let msg="No previous month available for comparison."; if(current&&prev){const diff=current.total-prev.total;if(prev.total===0) msg=diff===0?"No change from last month.":"Previous month had no spending."; else msg=`${Math.abs(diff/prev.total*100).toFixed(1)}% ${diff>=0?"more":"less"} than last month.`} document.getElementById("monthlyComparisonText").textContent=msg; }
+    function renderHeatmap(){ const y=heatmapMonth.getFullYear(),m=heatmapMonth.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0); document.getElementById("heatmapTitle").textContent=first.toLocaleDateString("en-CA",{month:"long",year:"numeric"}); const daily={}; data.expenses.forEach(e=>daily[e.date]=(daily[e.date]||0)+Number(e.amount)); const max=Math.max(0,...Object.entries(daily).filter(([d])=>d.startsWith(`${y}-${String(m+1).padStart(2,"0")}`)).map(([,v])=>v)); let html=""; const blanks=(first.getDay()+6)%7; for(let i=0;i<blanks;i++)html+='<div class="heatmap-day blank"></div>'; for(let d=1;d<=last.getDate();d++){const key=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`,v=daily[key]||0,level=v===0?0:Math.min(4,Math.ceil(v/(max||1)*4));html+=`<button class="heatmap-day" data-date="${key}" data-level="${level}" title="${formatDate(key)}: ${currency(v)}"><span>${d}</span><span class="day-total">${v?currency(v):"$0"}</span></button>`} document.getElementById("heatmap").innerHTML=html; }
+    function renderStreaks(s){ document.getElementById("streakMetrics").innerHTML=`<div class="metric-row"><span>Current under-budget streak</span><strong>${s.under.current} days</strong></div><div class="metric-row"><span>Longest under-budget streak</span><strong>${s.under.longest} days</strong></div><div class="metric-row"><span>Current no-spend streak</span><strong>${s.noSpend.current} days</strong></div><div class="metric-row"><span>Longest no-spend streak</span><strong>${s.noSpend.longest} days</strong></div><div class="metric-row"><span>Current spending-day streak</span><strong>${s.spending.current} days</strong></div><div class="metric-row"><span>Longest spending-day streak</span><strong>${s.spending.longest} days</strong></div><div class="metric-row"><span>Days over budget</span><strong>${s.overDays}</strong></div>`; }
+    function renderPredictions(){ const today=new Date(),y=today.getFullYear(),m=today.getMonth(),monthKey=`${y}-${String(m+1).padStart(2,"0")}`,elapsed=today.getDate(),days=new Date(y,m+1,0).getDate(),spent=data.expenses.filter(e=>e.date.startsWith(monthKey)).reduce((s,e)=>s+Number(e.amount),0),projected=elapsed?spent/elapsed*days:0,budget=Number(data.monthlyBudget),remaining=budget-spent,remainingDays=Math.max(0,days-elapsed),daily=remainingDays?remaining/remainingDays:0; const prevDate=new Date(y,m-1,1),prevKey=`${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,"0")}`,prev=data.expenses.filter(e=>e.date.startsWith(prevKey)).reduce((s,e)=>s+Number(e.amount),0); const comparison=prev?`${Math.abs((spent-prev)/prev*100).toFixed(1)}% ${spent>=prev?"more":"less"} than last month so far`:`No previous-month spending is available for comparison`; document.getElementById("predictions").innerHTML=`<div class="prediction">At your current spending rate, you are projected to spend <strong>${currency(projected)}</strong> this month.</div><div class="prediction">${comparison}.</div><div class="prediction">You can spend <strong>${currency(Math.max(0,daily))} per day</strong> for the rest of the month and remain within budget.</div><div class="prediction">You are projected to be <strong class="${projected<=budget?"positive":"negative"}">${currency(Math.abs(budget-projected))} ${projected<=budget?"under":"over"} budget</strong>.</div>`; }
+    function csvEscape(v){const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
+    function downloadCsv(name,rows){const blob=new Blob(["\ufeff"+rows.map(r=>r.map(csvEscape).join(",")).join("\n")],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
+
+    document.getElementById("showTrackerPage").addEventListener("click",()=>{document.getElementById("trackerPage").classList.remove("hidden");document.getElementById("dashboardPage").classList.add("hidden");document.getElementById("showTrackerPage").classList.add("active");document.getElementById("showDashboardPage").classList.remove("active")});
+    document.getElementById("showDashboardPage").addEventListener("click",()=>{document.getElementById("trackerPage").classList.add("hidden");document.getElementById("dashboardPage").classList.remove("hidden");document.getElementById("showDashboardPage").classList.add("active");document.getElementById("showTrackerPage").classList.remove("active"); const p=data.dashboardPreferences||defaultData().dashboardPreferences; document.getElementById("dashboardDateFilter").value=p.dateFilter;document.getElementById("dashboardGroupView").value=p.groupView;document.getElementById("dashboardChartType").value=p.chartType;refreshCategorySuggestions();document.getElementById("dashboardCategoryFilter").value=p.category||"all";document.getElementById("customDateRange").classList.toggle("hidden",p.dateFilter!=="custom");renderDashboard()});
+    function saveDashboardPreferences() {
+      data.dashboardPreferences = {
+        dateFilter: document.getElementById("dashboardDateFilter").value,
+        groupView: document.getElementById("dashboardGroupView").value,
+        chartType: document.getElementById("dashboardChartType").value,
+        category: document.getElementById("dashboardCategoryFilter").value
+      };
+      scheduleSave();
+    }
+    ["dashboardDateFilter","dashboardGroupView","dashboardChartType","dashboardCategoryFilter","dashboardStartDate","dashboardEndDate"].forEach(id=>document.getElementById(id).addEventListener("change",()=>{document.getElementById("customDateRange").classList.toggle("hidden",document.getElementById("dashboardDateFilter").value!=="custom");renderDashboard();saveDashboardPreferences()}));
+    document.getElementById("resetDashboardFilters").addEventListener("click",()=>{document.getElementById("dashboardDateFilter").value="thisMonth";document.getElementById("dashboardGroupView").value="day";document.getElementById("dashboardChartType").value="line";document.getElementById("dashboardCategoryFilter").value="all";document.getElementById("customDateRange").classList.add("hidden");renderDashboard();saveDashboardPreferences()});
+    document.getElementById("categoryList").addEventListener("click",e=>{const b=e.target.closest("[data-category]");if(!b)return;document.getElementById("dashboardCategoryFilter").value=b.dataset.category;renderDashboard();saveDashboardPreferences()});
+    document.getElementById("heatmap").addEventListener("click",e=>{const b=e.target.closest("[data-date]");if(b)openDetails(data.expenses.filter(x=>x.date===b.dataset.date),formatDate(b.dataset.date))});
+    document.getElementById("heatmapPrev").addEventListener("click",()=>{heatmapMonth=new Date(heatmapMonth.getFullYear(),heatmapMonth.getMonth()-1,1);renderHeatmap()});
+    document.getElementById("heatmapNext").addEventListener("click",()=>{heatmapMonth=new Date(heatmapMonth.getFullYear(),heatmapMonth.getMonth()+1,1);renderHeatmap()});
+    document.getElementById("closeTransactionDetails").addEventListener("click",()=>transactionDetailsModal.classList.remove("show")); transactionDetailsModal.addEventListener("click",e=>{if(e.target===transactionDetailsModal)transactionDetailsModal.classList.remove("show")});
+    document.getElementById("exportTransactionsCsv").addEventListener("click",()=>downloadCsv("filtered-transactions.csv",[["Date","Description","Category","Amount (CAD)"],...filteredExpenses().map(e=>[e.date,e.description||"Spending",e.category||"Uncategorized",Number(e.amount).toFixed(2)])]));
+    document.getElementById("exportDashboardCsv").addEventListener("click",()=>{const groups=groupExpenses(filteredExpenses(),document.getElementById("dashboardGroupView").value);downloadCsv("dashboard-data.csv",[["Period","Total Spent (CAD)","Purchases","Average Purchase (CAD)"],...groups.map(g=>[g.key,g.total.toFixed(2),g.count,(g.count?g.total/g.count:0).toFixed(2)])])});
+    document.getElementById("printDashboard").addEventListener("click",()=>window.print());
 
     async function beginUserDataSync(user) {
       if (unsubscribeUserData) {
@@ -1172,13 +1518,11 @@ const firebaseConfig = {
 
       const userDoc = doc(db, "users", user.uid);
       const localBackupKey = `budgetData_${user.uid}`;
-      const localBackupRaw = localStorage.getItem(localBackupKey);
-      let localBackup = null;
+      const localBackup = localStorage.getItem(localBackupKey);
 
-      if (localBackupRaw) {
+      if (localBackup) {
         try {
-          localBackup = normalizeLoadedData(JSON.parse(localBackupRaw));
-          data = localBackup;
+          data = normalizeLoadedData(JSON.parse(localBackup));
           applyTheme(data.theme || "system");
 
           if (!document.getElementById("expenseDate").value) {
@@ -1188,34 +1532,29 @@ const firebaseConfig = {
           render();
         } catch (error) {
           console.error("Could not load local backup:", error);
-          localStorage.removeItem(localBackupKey);
         }
       }
 
       const firstSnapshot = await getDoc(userDoc);
 
       if (!firstSnapshot.exists()) {
-        data = localBackup || defaultData();
-        const initialPayload = {
+        if (!localBackup) {
+          data = defaultData();
+        }
+
+        await setDoc(userDoc, {
           ...data,
           email: user.email,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        };
-        await setDoc(userDoc, initialPayload);
-        localStorage.setItem(localBackupKey, JSON.stringify(initialPayload));
+        });
       } else {
-        const remoteData = normalizeLoadedData(firstSnapshot.data());
-        const localTime = Date.parse(localBackup?.updatedAt || 0) || 0;
-        const remoteTime = Date.parse(remoteData.updatedAt || 0) || 0;
+        data = normalizeLoadedData(firstSnapshot.data());
 
-        if (localBackup && localTime > remoteTime) {
-          data = localBackup;
-          await setDoc(userDoc, localBackup, { merge: true });
-        } else {
-          data = remoteData;
-          localStorage.setItem(localBackupKey, JSON.stringify(remoteData));
-        }
+        localStorage.setItem(
+          localBackupKey,
+          JSON.stringify(data)
+        );
       }
 
       unsubscribeUserData = onSnapshot(
@@ -1223,14 +1562,12 @@ const firebaseConfig = {
         snapshot => {
           if (!snapshot.exists()) return;
 
-          const incoming = normalizeLoadedData(snapshot.data());
-          const incomingTime = Date.parse(incoming.updatedAt || 0) || 0;
-          const currentTime = Date.parse(data.updatedAt || 0) || 0;
+          data = normalizeLoadedData(snapshot.data());
 
-          if (incomingTime >= currentTime) {
-            data = incoming;
-            localStorage.setItem(localBackupKey, JSON.stringify(data));
-          }
+          localStorage.setItem(
+            localBackupKey,
+            JSON.stringify(data)
+          );
 
           if (!document.getElementById("expenseDate").value) {
             document.getElementById("expenseDate").value = localDateString();
@@ -1249,7 +1586,6 @@ const firebaseConfig = {
     }
 
     if (!firebaseConfigured) {
-      authScreen.classList.remove("hidden");
       firebaseWarning.classList.remove("hidden");
       applyTheme("system");
     } else {
@@ -1284,7 +1620,6 @@ const firebaseConfig = {
           }
         });
       } catch (error) {
-        authScreen.classList.remove("hidden");
         firebaseWarning.classList.remove("hidden");
         showStatus(document.getElementById("authMessage"), friendlyFirebaseError(error), "error");
       }
