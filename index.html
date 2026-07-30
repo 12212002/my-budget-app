@@ -1686,7 +1686,7 @@ const firebaseConfig = {
 
       try {
         await sendPasswordResetEmail(auth, email);
-        showStatus(message, "Password reset email sent.", "success");
+        showStatus(message, "Password reset email sent. (check Spam Inbox)", "success");
       } catch (error) {
         showStatus(message, friendlyFirebaseError(error), "error");
       }
