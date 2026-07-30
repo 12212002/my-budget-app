@@ -963,8 +963,12 @@ const firebaseConfig = {
         "auth/weak-password": "Use a password with at least 6 characters.",
         "auth/too-many-requests": "Too many attempts. Wait a little while and try again.",
         "auth/user-disabled": "This account has been disabled.",
-        "auth/requires-recent-login": "For security, sign out and sign back in before deleting your account.",
-        "permission-denied": "Firebase security rules blocked this request."
+        "auth/requires-recent-login": "For security, sign out and sign back in, then try deleting the account again.",
+        "auth/wrong-password": "The password you entered is incorrect.",
+        "auth/missing-password": "Enter your password.",
+        "auth/network-request-failed": "A network error occurred. Check your connection and try again.",
+        "permission-denied": "Firebase security rules blocked deletion of your saved data.",
+        "firestore/permission-denied": "Firebase security rules blocked deletion of your saved data."
       };
       return messages[code] || error?.message || "Something went wrong.";
     }
@@ -1413,39 +1417,117 @@ const firebaseConfig = {
     });
 
     document.getElementById("deleteAccountButton").addEventListener("click", () => {
+      if (!currentUser) {
+        showStatus(
+          document.getElementById("settingsMessage"),
+          "You must be signed in to delete your account.",
+          "error"
+        );
+        return;
+      }
+
       settingsModal.classList.remove("show");
-      document.getElementById("deleteAccountPassword").value = "";
+      const passwordInput = document.getElementById("deleteAccountPassword");
+      passwordInput.value = "";
+      passwordInput.type = "password";
       clearStatus(document.getElementById("deleteAccountMessage"));
       deleteAccountModal.classList.add("show");
+
+      setTimeout(() => passwordInput.focus(), 0);
     });
 
     document.getElementById("cancelDeleteAccount").addEventListener("click", () => {
       deleteAccountModal.classList.remove("show");
-      transactionDetailsModal.classList.remove("show");
+      document.getElementById("deleteAccountPassword").value = "";
+      clearStatus(document.getElementById("deleteAccountMessage"));
     });
 
-    document.getElementById("confirmDeleteAccount").addEventListener("click", async () => {
-      const password = document.getElementById("deleteAccountPassword").value;
+    deleteAccountModal.addEventListener("click", event => {
+      if (event.target === deleteAccountModal) {
+        deleteAccountModal.classList.remove("show");
+        document.getElementById("deleteAccountPassword").value = "";
+        clearStatus(document.getElementById("deleteAccountMessage"));
+      }
+    });
+
+    async function permanentlyDeleteCurrentAccount() {
+      const passwordInput = document.getElementById("deleteAccountPassword");
+      const password = passwordInput.value;
       const message = document.getElementById("deleteAccountMessage");
       const button = document.getElementById("confirmDeleteAccount");
 
+      clearStatus(message);
+
+      if (!currentUser || !auth || !db) {
+        showStatus(message, "Your account session is unavailable. Sign in again and retry.", "error");
+        return;
+      }
+
+      if (!currentUser.email) {
+        showStatus(message, "This account does not have an email address and cannot be deleted here.", "error");
+        return;
+      }
+
       if (!password) {
         showStatus(message, "Enter your password.", "error");
+        passwordInput.focus();
         return;
       }
 
       button.disabled = true;
+      button.textContent = "Deleting...";
+      showStatus(message, "Verifying your password and deleting your account...", "success");
+
+      const uid = currentUser.uid;
 
       try {
         const credential = EmailAuthProvider.credential(currentUser.email, password);
         await reauthenticateWithCredential(currentUser, credential);
-        await deleteDoc(doc(db, "users", currentUser.uid));
+
+        if (unsubscribeUserData) {
+          unsubscribeUserData();
+          unsubscribeUserData = null;
+        }
+
+        await deleteDoc(doc(db, "users", uid));
         await deleteUser(currentUser);
+
+        localStorage.removeItem(`budgetData_${uid}`);
+        currentUser = null;
+        data = defaultData();
+
         deleteAccountModal.classList.remove("show");
+        passwordInput.value = "";
+        authScreen.classList.remove("hidden");
+        appScreen.classList.add("hidden");
+        setAuthMode("signin");
+        showStatus(
+          document.getElementById("authMessage"),
+          "Your account and saved spending data were permanently deleted.",
+          "success"
+        );
       } catch (error) {
-        showStatus(message, friendlyFirebaseError(error), "error");
+        console.error("Account deletion failed:", error);
+
+        if (error?.code === "auth/invalid-credential" || error?.code === "auth/wrong-password") {
+          showStatus(message, "The password you entered is incorrect.", "error");
+        } else if (error?.code === "auth/requires-recent-login") {
+          showStatus(message, "Sign out, sign back in, and then try deleting the account again.", "error");
+        } else {
+          showStatus(message, friendlyFirebaseError(error), "error");
+        }
       } finally {
         button.disabled = false;
+        button.textContent = "Delete Account";
+      }
+    }
+
+    document.getElementById("confirmDeleteAccount").addEventListener("click", permanentlyDeleteCurrentAccount);
+
+    document.getElementById("deleteAccountPassword").addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        permanentlyDeleteCurrentAccount();
       }
     });
 
