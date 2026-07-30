@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#f5f7fb" />
+  <link rel="icon" type="image/png" href="favicon.png">
   <title>Daily Spending Tracker</title>
   <style>
     :root {
@@ -1450,6 +1451,22 @@ const firebaseConfig = {
       }
     });
 
+    function withTimeout(promise, milliseconds, timeoutMessage) {
+      let timeoutId;
+
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+          const error = new Error(timeoutMessage);
+          error.code = "operation-timeout";
+          reject(error);
+        }, milliseconds);
+      });
+
+      return Promise.race([promise, timeoutPromise]).finally(() => {
+        clearTimeout(timeoutId);
+      });
+    }
+
     async function permanentlyDeleteCurrentAccount() {
       const passwordInput = document.getElementById("deleteAccountPassword");
       const password = passwordInput.value;
@@ -1476,21 +1493,44 @@ const firebaseConfig = {
 
       button.disabled = true;
       button.textContent = "Deleting...";
-      showStatus(message, "Verifying your password and deleting your account...", "success");
 
-      const uid = currentUser.uid;
+      const userBeingDeleted = currentUser;
+      const uid = userBeingDeleted.uid;
 
       try {
-        const credential = EmailAuthProvider.credential(currentUser.email, password);
-        await reauthenticateWithCredential(currentUser, credential);
+        showStatus(message, "Step 1 of 3: Verifying your password...", "success");
+
+        const credential = EmailAuthProvider.credential(
+          userBeingDeleted.email,
+          password
+        );
+
+        await withTimeout(
+          reauthenticateWithCredential(userBeingDeleted, credential),
+          15000,
+          "Password verification timed out. Check your internet connection and try again."
+        );
+
+        showStatus(message, "Step 2 of 3: Deleting your saved spending data...", "success");
 
         if (unsubscribeUserData) {
           unsubscribeUserData();
           unsubscribeUserData = null;
         }
 
-        await deleteDoc(doc(db, "users", uid));
-        await deleteUser(currentUser);
+        await withTimeout(
+          deleteDoc(doc(db, "users", uid)),
+          15000,
+          "Deleting your saved data timed out. Check your Firestore rules and internet connection."
+        );
+
+        showStatus(message, "Step 3 of 3: Deleting your login account...", "success");
+
+        await withTimeout(
+          deleteUser(userBeingDeleted),
+          15000,
+          "Deleting your login account timed out. Sign out, sign back in, and try again."
+        );
 
         localStorage.removeItem(`budgetData_${uid}`);
         currentUser = null;
@@ -1501,6 +1541,7 @@ const firebaseConfig = {
         authScreen.classList.remove("hidden");
         appScreen.classList.add("hidden");
         setAuthMode("signin");
+
         showStatus(
           document.getElementById("authMessage"),
           "Your account and saved spending data were permanently deleted.",
@@ -1513,6 +1554,21 @@ const firebaseConfig = {
           showStatus(message, "The password you entered is incorrect.", "error");
         } else if (error?.code === "auth/requires-recent-login") {
           showStatus(message, "Sign out, sign back in, and then try deleting the account again.", "error");
+        } else if (error?.code === "operation-timeout") {
+          showStatus(message, error.message, "error");
+        } else if (
+          error?.code === "permission-denied" ||
+          error?.code === "firestore/permission-denied"
+        ) {
+          showStatus(
+            message,
+            "Firestore blocked the deletion. Your Firebase security rules must allow a signed-in user to delete their own users/" +
+              uid +
+              " document.",
+            "error"
+          );
+        } else if (error?.code === "auth/network-request-failed") {
+          showStatus(message, "A network error occurred. Check your internet connection and try again.", "error");
         } else {
           showStatus(message, friendlyFirebaseError(error), "error");
         }
