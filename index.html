@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#f5f7fb" />
-  <link rel="icon" type="image/png" href="favicon.png">
   <title>Daily Spending Tracker</title>
   <style>
     :root {
@@ -357,6 +356,37 @@
 
     .auth-fields { display: grid; gap: 14px; }
 
+    .password-field {
+      position: relative;
+    }
+
+    .password-field input {
+      padding-right: 52px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      transform: translateY(-50%);
+      width: 38px;
+      min-height: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      font-size: 19px;
+      line-height: 1;
+    }
+
+    .password-toggle:hover {
+      background: var(--soft-accent);
+      color: var(--soft-accent-text);
+    }
+
     .text-button {
       background: transparent;
       color: var(--accent);
@@ -471,12 +501,20 @@
 
         <div>
           <label for="authPassword">Password</label>
-          <input id="authPassword" type="password" minlength="6" autocomplete="current-password" required />
+          <div class="password-field">
+            <input id="authPassword" type="password" minlength="6" autocomplete="current-password" required />
+            <button id="toggleAuthPassword" class="password-toggle" type="button"
+              aria-label="Show password" title="Show password" aria-pressed="false">👁</button>
+          </div>
         </div>
 
         <div id="confirmPasswordWrap" class="hidden">
           <label for="confirmPassword">Confirm password</label>
-          <input id="confirmPassword" type="password" minlength="6" autocomplete="new-password" />
+          <div class="password-field">
+            <input id="confirmPassword" type="password" minlength="6" autocomplete="new-password" />
+            <button id="toggleConfirmPassword" class="password-toggle" type="button"
+              aria-label="Show confirm password" title="Show confirm password" aria-pressed="false">👁</button>
+          </div>
         </div>
 
         <button id="authSubmit" class="primary" type="submit">Sign In</button>
@@ -801,7 +839,8 @@
       getDoc,
       setDoc,
       deleteDoc,
-      onSnapshot
+      onSnapshot,
+      runTransaction
     } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
     /*
@@ -836,7 +875,8 @@ const firebaseConfig = {
       startDate: localDateString(),
       theme: "system",
       dashboardPreferences: { dateFilter: "thisMonth", groupView: "day", chartType: "line", category: "all" },
-      expenses: []
+      expenses: [],
+      deletedExpenseIds: []
     });
 
     let data = defaultData();
@@ -962,24 +1002,70 @@ const firebaseConfig = {
         .reduce((sum, expense) => sum + Number(expense.amount), 0);
     }
 
+    function expenseVersion(expense) {
+      return String(expense.updatedAt || expense.createdAt || "");
+    }
+
+    function mergeExpenses(remoteExpenses = [], localExpenses = [], deletedIds = []) {
+      const deleted = new Set(deletedIds);
+      const merged = new Map();
+
+      [...remoteExpenses, ...localExpenses].forEach(expense => {
+        if (!expense?.id || deleted.has(expense.id)) return;
+
+        const existing = merged.get(expense.id);
+        if (!existing || expenseVersion(expense) >= expenseVersion(existing)) {
+          merged.set(expense.id, expense);
+        }
+      });
+
+      return [...merged.values()];
+    }
+
     async function saveDataNow() {
       if (!currentUser || !db) {
         throw new Error("You are not signed in or Firestore is unavailable.");
       }
 
-      localStorage.setItem(
-        `budgetData_${currentUser.uid}`,
-        JSON.stringify(data)
-      );
+      const userDoc = doc(db, "users", currentUser.uid);
+      const localBackupKey = `budgetData_${currentUser.uid}`;
 
-      await setDoc(
-        doc(db, "users", currentUser.uid),
-        {
+      const savedData = await runTransaction(db, async transaction => {
+        const remoteSnapshot = await transaction.get(userDoc);
+        const remoteData = remoteSnapshot.exists()
+          ? normalizeLoadedData(remoteSnapshot.data())
+          : defaultData();
+
+        const deletedExpenseIds = [
+          ...new Set([
+            ...(remoteData.deletedExpenseIds || []),
+            ...(data.deletedExpenseIds || [])
+          ])
+        ];
+
+        const mergedData = {
+          ...remoteData,
           ...data,
+          expenses: mergeExpenses(
+            remoteData.expenses,
+            data.expenses,
+            deletedExpenseIds
+          ),
+          deletedExpenseIds,
+          email: currentUser.email,
+          createdAt: remoteSnapshot.exists()
+            ? (remoteSnapshot.data().createdAt || new Date().toISOString())
+            : new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        },
-        { merge: true }
-      );
+        };
+
+        transaction.set(userDoc, mergedData, { merge: true });
+        return normalizeLoadedData(mergedData);
+      });
+
+      data = savedData;
+      localStorage.setItem(localBackupKey, JSON.stringify(data));
+      return data;
     }
 
     function scheduleSave() {
@@ -1000,7 +1086,10 @@ const firebaseConfig = {
         dailyAllowance: Number(saved?.dailyAllowance ?? 10),
         monthlyBudget: Number(saved?.monthlyBudget ?? 400),
         dashboardPreferences: { ...defaultData().dashboardPreferences, ...(saved?.dashboardPreferences || {}) },
-        expenses: Array.isArray(saved?.expenses) ? saved.expenses.map(expense => ({ ...expense, category: expense.category || "Uncategorized" })) : []
+        expenses: Array.isArray(saved?.expenses)
+          ? saved.expenses.map(expense => ({ ...expense, category: expense.category || "Uncategorized" }))
+          : [],
+        deletedExpenseIds: Array.isArray(saved?.deletedExpenseIds) ? saved.deletedExpenseIds : []
       };
     }
 
@@ -1168,6 +1257,9 @@ const firebaseConfig = {
 
     document.getElementById("confirmDeleteTransaction").addEventListener("click", async () => {
       if (!pendingDeleteExpenseId) return;
+      data.deletedExpenseIds = [
+        ...new Set([...(data.deletedExpenseIds || []), pendingDeleteExpenseId])
+      ];
       data.expenses = data.expenses.filter(expense => expense.id !== pendingDeleteExpenseId);
       pendingDeleteExpenseId = null;
       deleteTransactionModal.classList.remove("show");
@@ -1357,11 +1449,43 @@ const firebaseConfig = {
       }
     });
 
+    function setupPasswordToggle(buttonId, inputId, showLabel, hideLabel) {
+      const button = document.getElementById(buttonId);
+      const input = document.getElementById(inputId);
+
+      button.addEventListener("click", () => {
+        const shouldShow = input.type === "password";
+        input.type = shouldShow ? "text" : "password";
+        button.textContent = shouldShow ? "🙈" : "👁";
+        const label = shouldShow ? hideLabel : showLabel;
+        button.setAttribute("aria-label", label);
+        button.setAttribute("title", label);
+        button.setAttribute("aria-pressed", String(shouldShow));
+      });
+    }
+
+    setupPasswordToggle("toggleAuthPassword", "authPassword", "Show password", "Hide password");
+    setupPasswordToggle("toggleConfirmPassword", "confirmPassword", "Show confirm password", "Hide confirm password");
+
     document.getElementById("showSignIn").addEventListener("click", () => setAuthMode("signin"));
     document.getElementById("showCreateAccount").addEventListener("click", () => setAuthMode("create"));
 
     function setAuthMode(mode) {
       authMode = mode;
+
+      [
+        ["authPassword", "toggleAuthPassword", "Show password"],
+        ["confirmPassword", "toggleConfirmPassword", "Show confirm password"]
+      ].forEach(([inputId, buttonId, label]) => {
+        const input = document.getElementById(inputId);
+        const button = document.getElementById(buttonId);
+        input.type = "password";
+        button.textContent = "👁";
+        button.setAttribute("aria-label", label);
+        button.setAttribute("title", label);
+        button.setAttribute("aria-pressed", "false");
+      });
+
       const isCreate = mode === "create";
       document.getElementById("showSignIn").classList.toggle("active", !isCreate);
       document.getElementById("showCreateAccount").classList.toggle("active", isCreate);
@@ -1551,6 +1675,8 @@ const firebaseConfig = {
         });
       } else {
         data = normalizeLoadedData(firstSnapshot.data());
+        const deleted = new Set(data.deletedExpenseIds || []);
+        data.expenses = data.expenses.filter(expense => !deleted.has(expense.id));
 
         localStorage.setItem(
           localBackupKey,
@@ -1564,6 +1690,8 @@ const firebaseConfig = {
           if (!snapshot.exists()) return;
 
           data = normalizeLoadedData(snapshot.data());
+          const deleted = new Set(data.deletedExpenseIds || []);
+          data.expenses = data.expenses.filter(expense => !deleted.has(expense.id));
 
           localStorage.setItem(
             localBackupKey,
