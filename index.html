@@ -409,9 +409,15 @@
 
 
     /* ===== Analytics dashboard ===== */
-    .main-nav { display:flex; gap:10px; margin-bottom:20px; }
-    .main-nav button { width:auto; min-width:140px; }
-    .main-nav button.active { background:var(--accent); color:#fff; }
+    .main-nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:20px; }
+    .nav-group { display:grid; gap:8px; align-content:start; }
+    .nav-parent { display:flex; align-items:center; justify-content:space-between; width:100%; background:var(--card); color:var(--text); border:1px solid var(--border); box-shadow:var(--shadow); }
+    .nav-parent.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .nav-submenu { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .nav-submenu button { width:100%; min-width:0; }
+    .nav-submenu button.active { background:var(--accent); color:#fff; }
+    .gas-form-grid { grid-template-columns:1fr 1fr 1.4fr auto; }
+    .page-heading { margin:0 0 18px; font-size:26px; }
     .page-section.hidden { display:none !important; }
     .dashboard-controls { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; align-items:end; }
     .dashboard-controls .control-actions { display:flex; gap:8px; }
@@ -472,7 +478,8 @@
 
     @media (max-width: 450px) {
       .grid, .analytics-grid { grid-template-columns: 1fr; }
-      .main-nav { display:grid; grid-template-columns:1fr 1fr; }
+      .main-nav { grid-template-columns:1fr; }
+      .nav-submenu { grid-template-columns:1fr 1fr; }
       .main-nav button { width:100%; min-width:0; }
       .modal-actions { flex-direction: column-reverse; }
       .modal-actions button { width: 100%; }
@@ -529,8 +536,8 @@
   <main id="appScreen" class="container hidden">
     <header class="app-header">
       <div>
-        <h1>Daily Spending Tracker</h1>
-        <p class="subtitle">
+        <h1 id="appHeaderTitle">Daily Spending Tracker</h1>
+        <p id="appHeaderSubtitle" class="subtitle">
           Spending less than your daily allowance creates a surplus. Spending more reduces future available money.
         </p>
       </div>
@@ -542,8 +549,25 @@
     </header>
 
     <nav class="main-nav" aria-label="Main navigation">
-      <button id="showTrackerPage" class="secondary active" type="button">Tracker</button>
-      <button id="showDashboardPage" class="secondary" type="button">Dashboard</button>
+      <div class="nav-group">
+        <button id="dailyNavToggle" class="nav-parent active" type="button" aria-expanded="true">
+          <span>Daily Spending</span><span id="dailyNavArrow">▼</span>
+        </button>
+        <div id="dailySubmenu" class="nav-submenu">
+          <button id="showTrackerPage" class="secondary active" type="button">Tracker</button>
+          <button id="showDashboardPage" class="secondary" type="button">Dashboard</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button id="gasNavToggle" class="nav-parent" type="button" aria-expanded="false">
+          <span>Gas Spending</span><span id="gasNavArrow">▶</span>
+        </button>
+        <div id="gasSubmenu" class="nav-submenu hidden">
+          <button id="showGasTrackerPage" class="secondary" type="button">Gas Tracker</button>
+          <button id="showGasDashboardPage" class="secondary" type="button">Gas Dashboard</button>
+        </div>
+      </div>
     </nav>
 
     <section id="trackerPage" class="page-section">
@@ -632,14 +656,86 @@
     </section>
     </section>
 
+    <section id="gasTrackerPage" class="page-section hidden">
+      <section class="grid">
+        <div class="card">
+          <div class="label">Available on Selected Day</div>
+          <div id="gasAvailableToday" class="value">$0.00</div>
+        </div>
+
+        <div class="card">
+          <div class="label">Spent This Month</div>
+          <div id="gasMonthSpent" class="value">$0.00</div>
+        </div>
+
+        <div class="card">
+          <div class="label">Monthly Budget Remaining</div>
+          <div id="gasMonthRemaining" class="value">$0.00</div>
+        </div>
+
+        <div class="card">
+          <div class="label">Total Spent</div>
+          <div id="gasTotalSpent" class="value">$0.00</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="section-title">Add Gas Spending</h2>
+        <form id="gasExpenseForm" class="form-grid gas-form-grid">
+          <div>
+            <label for="gasExpenseDate">Date</label>
+            <input id="gasExpenseDate" type="date" required />
+          </div>
+
+          <div>
+            <label for="gasExpenseAmount">Amount</label>
+            <input id="gasExpenseAmount" type="number" min="0" step="0.01" placeholder="0.00" required />
+          </div>
+
+          <div>
+            <label for="gasExpenseDescription">Description</label>
+            <input id="gasExpenseDescription" type="text" maxlength="80" placeholder="Gas station, fill-up..." />
+          </div>
+
+          <div class="button-stack">
+            <button type="submit" class="primary">Add Gas Spending</button>
+            <button type="button" id="gasAddZeroDay" class="secondary">Add $0 Day</button>
+          </div>
+        </form>
+        <div id="gasFormMessage" class="status"></div>
+      </section>
+
+      <div class="spacer"></div>
+
+      <section class="card">
+        <h2 class="section-title">Gas Spending History</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th class="amount">Spent</th>
+                <th class="amount">Balance After</th>
+                <th class="amount">Action</th>
+              </tr>
+            </thead>
+            <tbody id="gasHistoryBody"></tbody>
+          </table>
+        </div>
+        <div id="gasEmptyState" class="empty">No gas spending has been added yet.</div>
+      </section>
+    </section>
+
     <section id="dashboardPage" class="page-section hidden">
+      <h2 id="dashboardPageHeading" class="page-heading">Daily Spending Dashboard</h2>
       <section class="card no-print">
         <h2 class="section-title">Dashboard Filters</h2>
         <div class="dashboard-controls">
           <div><label for="dashboardDateFilter">Date range</label><select id="dashboardDateFilter"><option value="today">Today</option><option value="7days">Last 7 days</option><option value="30days">Last 30 days</option><option value="thisMonth" selected>This month</option><option value="lastMonth">Last month</option><option value="thisYear">This year</option><option value="all">All time</option><option value="custom">Custom range</option></select></div>
           <div><label for="dashboardGroupView">Group by</label><select id="dashboardGroupView"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option><option value="year">Year</option></select></div>
           <div><label for="dashboardChartType">Chart type</label><select id="dashboardChartType"><option value="line">Line</option><option value="bar">Bar</option></select></div>
-          <div><label for="dashboardCategoryFilter">Category</label><select id="dashboardCategoryFilter"><option value="all">All categories</option></select></div>
+          <div id="dashboardCategoryControl"><label for="dashboardCategoryFilter">Category</label><select id="dashboardCategoryFilter"><option value="all">All categories</option></select></div>
           <div class="control-actions"><button id="resetDashboardFilters" class="secondary" type="button">Reset</button></div>
         </div>
         <div id="customDateRange" class="custom-range hidden"><div><label for="dashboardStartDate">Start date</label><input id="dashboardStartDate" type="date"></div><div><label for="dashboardEndDate">End date</label><input id="dashboardEndDate" type="date"></div></div>
@@ -689,18 +785,33 @@
 
       <div class="settings-grid">
         <div>
-          <label for="dailyAllowance">Daily allowance</label>
+          <label for="dailyAllowance">Daily Spending allowance</label>
           <input id="dailyAllowance" type="number" min="0.01" step="0.01" />
         </div>
 
         <div>
-          <label for="monthlyBudget">Monthly spending budget</label>
+          <label for="monthlyBudget">Daily Spending monthly budget</label>
           <input id="monthlyBudget" type="number" min="0.01" step="0.01" />
         </div>
 
         <div>
-          <label for="startDate">Tracking start date</label>
+          <label for="startDate">Daily Spending start date</label>
           <input id="startDate" type="date" />
+        </div>
+
+        <div>
+          <label for="gasDailyAllowance">Gas daily allowance</label>
+          <input id="gasDailyAllowance" type="number" min="0.01" step="0.01" />
+        </div>
+
+        <div>
+          <label for="gasMonthlyBudget">Gas monthly budget</label>
+          <input id="gasMonthlyBudget" type="number" min="0.01" step="0.01" />
+        </div>
+
+        <div>
+          <label for="gasStartDate">Gas tracking start date</label>
+          <input id="gasStartDate" type="date" />
         </div>
 
         <div>
@@ -754,7 +865,7 @@
           <label for="editExpenseDescription">Description</label>
           <input id="editExpenseDescription" type="text" maxlength="80" />
         </div>
-        <div class="full-width">
+        <div id="editCategoryWrap" class="full-width">
           <label for="editExpenseCategory">Category</label>
           <select id="editExpenseCategory" required>
             <option value="">Select a category</option>
@@ -868,14 +979,21 @@ const firebaseConfig = {
     let authMode = "signin";
     let pendingDeleteExpenseId = null;
     let pendingEditExpenseId = null;
+    let pendingEditTrackerType = "daily";
+    let dashboardMode = "daily";
+    let activePage = "dailyTracker";
     let saveTimer = null;
 
     const defaultData = () => ({
       dailyAllowance: 10,
       monthlyBudget: 400,
       startDate: localDateString(),
+      gasDailyAllowance: 10,
+      gasMonthlyBudget: 400,
+      gasStartDate: localDateString(),
       theme: "system",
       dashboardPreferences: { dateFilter: "thisMonth", groupView: "day", chartType: "line", category: "all" },
+      gasDashboardPreferences: { dateFilter: "thisMonth", groupView: "day", chartType: "line", category: "all" },
       expenses: [],
       deletedExpenseIds: []
     });
@@ -990,19 +1108,38 @@ const firebaseConfig = {
       if (data.theme === "system") applyTheme("system");
     });
 
-    function allowanceEarnedUpTo(dateString) {
-      return daysInclusive(data.startDate, dateString) * Number(data.dailyAllowance);
+    function expensesFor(type = "daily") {
+      return data.expenses.filter(expense => (expense.trackerType || "daily") === type);
     }
 
-    function totalSpentUpTo(dateString) {
-      return data.expenses
+    function trackerSettings(type = "daily") {
+      return type === "gas"
+        ? {
+            dailyAllowance: Number(data.gasDailyAllowance),
+            monthlyBudget: Number(data.gasMonthlyBudget),
+            startDate: data.gasStartDate
+          }
+        : {
+            dailyAllowance: Number(data.dailyAllowance),
+            monthlyBudget: Number(data.monthlyBudget),
+            startDate: data.startDate
+          };
+    }
+
+    function allowanceEarnedUpTo(dateString, type = "daily") {
+      const settings = trackerSettings(type);
+      return daysInclusive(settings.startDate, dateString) * settings.dailyAllowance;
+    }
+
+    function totalSpentUpTo(dateString, type = "daily") {
+      return expensesFor(type)
         .filter(expense => expense.date <= dateString)
         .reduce((sum, expense) => sum + Number(expense.amount), 0);
     }
 
-    function monthSpentFor(dateString) {
+    function monthSpentFor(dateString, type = "daily") {
       const month = dateString.slice(0, 7);
-      return data.expenses
+      return expensesFor(type)
         .filter(expense => expense.date.startsWith(month))
         .reduce((sum, expense) => sum + Number(expense.amount), 0);
     }
@@ -1017,10 +1154,13 @@ const firebaseConfig = {
 
       [...remoteExpenses, ...localExpenses].forEach(expense => {
         if (!expense?.id || deleted.has(expense.id)) return;
-
-        const existing = merged.get(expense.id);
-        if (!existing || expenseVersion(expense) >= expenseVersion(existing)) {
-          merged.set(expense.id, expense);
+        const normalized = {
+          ...expense,
+          trackerType: expense.trackerType === "gas" ? "gas" : "daily"
+        };
+        const existing = merged.get(normalized.id);
+        if (!existing || expenseVersion(normalized) >= expenseVersion(existing)) {
+          merged.set(normalized.id, normalized);
         }
       });
 
@@ -1051,11 +1191,7 @@ const firebaseConfig = {
         const mergedData = {
           ...remoteData,
           ...data,
-          expenses: mergeExpenses(
-            remoteData.expenses,
-            data.expenses,
-            deletedExpenseIds
-          ),
+          expenses: mergeExpenses(remoteData.expenses, data.expenses, deletedExpenseIds),
           deletedExpenseIds,
           email: currentUser.email,
           createdAt: remoteSnapshot.exists()
@@ -1073,13 +1209,19 @@ const firebaseConfig = {
       return data;
     }
 
+    function activeMessageElement() {
+      return activePage.startsWith("gas")
+        ? document.getElementById("gasFormMessage")
+        : document.getElementById("formMessage");
+    }
+
     function scheduleSave() {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
         try {
           await saveDataNow();
         } catch (error) {
-          showStatus(document.getElementById("formMessage"), friendlyFirebaseError(error), "error");
+          showStatus(activeMessageElement(), friendlyFirebaseError(error), "error");
         }
       }, 250);
     }
@@ -1090,49 +1232,75 @@ const firebaseConfig = {
         ...saved,
         dailyAllowance: Number(saved?.dailyAllowance ?? 10),
         monthlyBudget: Number(saved?.monthlyBudget ?? 400),
+        gasDailyAllowance: Number(saved?.gasDailyAllowance ?? 10),
+        gasMonthlyBudget: Number(saved?.gasMonthlyBudget ?? 400),
+        gasStartDate: saved?.gasStartDate || saved?.startDate || localDateString(),
         dashboardPreferences: { ...defaultData().dashboardPreferences, ...(saved?.dashboardPreferences || {}) },
+        gasDashboardPreferences: { ...defaultData().gasDashboardPreferences, ...(saved?.gasDashboardPreferences || {}) },
         expenses: Array.isArray(saved?.expenses)
-          ? saved.expenses.map(expense => ({ ...expense, category: expense.category || "Uncategorized" }))
+          ? saved.expenses.map(expense => ({
+              ...expense,
+              trackerType: expense.trackerType === "gas" ? "gas" : "daily",
+              category: expense.trackerType === "gas" ? "Gas" : (expense.category || "Uncategorized")
+            }))
           : [],
         deletedExpenseIds: Array.isArray(saved?.deletedExpenseIds) ? saved.deletedExpenseIds : []
       };
     }
 
     function render() {
-      const selectedDate = document.getElementById("expenseDate").value || localDateString();
-      const balance = allowanceEarnedUpTo(selectedDate) - totalSpentUpTo(selectedDate);
-      const monthSpent = monthSpentFor(selectedDate);
-      const monthRemaining = Number(data.monthlyBudget) - monthSpent;
-      const allTimeSpent = data.expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+      renderTracker("daily");
+      renderTracker("gas");
 
-      const available = document.getElementById("availableToday");
-      available.textContent = currency(balance);
-      available.className = `value ${balance >= 0 ? "positive" : "negative"}`;
-
-      document.getElementById("monthSpent").textContent = currency(monthSpent);
-
-      const remaining = document.getElementById("monthRemaining");
-      remaining.textContent = currency(monthRemaining);
-      remaining.className = `value ${monthRemaining >= 0 ? "positive" : "negative"}`;
-
-      document.getElementById("totalSpent").textContent = currency(allTimeSpent);
       document.getElementById("dailyAllowance").value = Number(data.dailyAllowance).toFixed(2);
       document.getElementById("monthlyBudget").value = Number(data.monthlyBudget).toFixed(2);
       document.getElementById("startDate").value = data.startDate;
+      document.getElementById("gasDailyAllowance").value = Number(data.gasDailyAllowance).toFixed(2);
+      document.getElementById("gasMonthlyBudget").value = Number(data.gasMonthlyBudget).toFixed(2);
+      document.getElementById("gasStartDate").value = data.gasStartDate;
       document.getElementById("themeSelect").value = data.theme || "system";
 
       applyTheme(data.theme || "system");
-      renderHistory();
       refreshCategorySuggestions();
-      if (!document.getElementById("dashboardPage").classList.contains("hidden")) renderDashboard();
+      if (!document.getElementById("dashboardPage").classList.contains("hidden")) {
+        renderDashboard();
+      }
     }
 
-    function renderHistory() {
-      const body = document.getElementById("historyBody");
-      const emptyState = document.getElementById("emptyState");
+    function renderTracker(type) {
+      const isGas = type === "gas";
+      const prefix = isGas ? "gas" : "";
+      const dateId = isGas ? "gasExpenseDate" : "expenseDate";
+      const selectedDate = document.getElementById(dateId).value || localDateString();
+      const settings = trackerSettings(type);
+      const balance = allowanceEarnedUpTo(selectedDate, type) - totalSpentUpTo(selectedDate, type);
+      const monthSpent = monthSpentFor(selectedDate, type);
+      const monthRemaining = settings.monthlyBudget - monthSpent;
+      const allTimeSpent = expensesFor(type).reduce((sum, expense) => sum + Number(expense.amount), 0);
+
+      const availableElement = isGas ? document.getElementById("gasAvailableToday") : document.getElementById("availableToday");
+      availableElement.textContent = currency(balance);
+      availableElement.className = `value ${balance >= 0 ? "positive" : "negative"}`;
+
+      const monthSpentElement = isGas ? document.getElementById("gasMonthSpent") : document.getElementById("monthSpent");
+      monthSpentElement.textContent = currency(monthSpent);
+
+      const remainingElement = isGas ? document.getElementById("gasMonthRemaining") : document.getElementById("monthRemaining");
+      remainingElement.textContent = currency(monthRemaining);
+      remainingElement.className = `value ${monthRemaining >= 0 ? "positive" : "negative"}`;
+
+      const totalElement = isGas ? document.getElementById("gasTotalSpent") : document.getElementById("totalSpent");
+      totalElement.textContent = currency(allTimeSpent);
+      renderHistory(type);
+    }
+
+    function renderHistory(type) {
+      const isGas = type === "gas";
+      const body = document.getElementById(isGas ? "gasHistoryBody" : "historyBody");
+      const emptyState = document.getElementById(isGas ? "gasEmptyState" : "emptyState");
       body.innerHTML = "";
 
-      const sorted = [...data.expenses].sort((a, b) => {
+      const sorted = [...expensesFor(type)].sort((a, b) => {
         if (a.date === b.date) {
           return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
         }
@@ -1147,12 +1315,11 @@ const firebaseConfig = {
           .filter(item => item.date <= expense.date)
           .reduce((sum, item) => sum + Number(item.amount), 0);
 
-        const balanceAfter = allowanceEarnedUpTo(expense.date) - spentToThisTransaction;
-
+        const balanceAfter = allowanceEarnedUpTo(expense.date, type) - spentToThisTransaction;
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${formatDate(expense.date)}</td>
-          <td>${escapeHtml(expense.description || "Spending")}</td>
+          <td>${escapeHtml(expense.description || (isGas ? "Gas" : "Spending"))}</td>
           <td class="amount">${currency(expense.amount)}</td>
           <td class="amount ${balanceAfter >= 0 ? "positive" : "negative"}">${currency(balanceAfter)}</td>
           <td class="amount">
@@ -1166,21 +1333,29 @@ const firebaseConfig = {
       });
     }
 
-    document.getElementById("historyBody").addEventListener("click", event => {
+    function handleHistoryClick(event) {
       const editButton = event.target.closest("[data-edit-id]");
       if (editButton) {
         pendingEditExpenseId = editButton.dataset.editId;
         const expense = data.expenses.find(item => item.id === pendingEditExpenseId);
         if (!expense) return;
 
+        pendingEditTrackerType = expense.trackerType === "gas" ? "gas" : "daily";
         document.getElementById("editExpenseDate").value = expense.date || localDateString();
         document.getElementById("editExpenseAmount").value = Number(expense.amount).toFixed(2);
         document.getElementById("editExpenseDescription").value = expense.description || "";
-        {
+        document.getElementById("editCategoryWrap").classList.toggle("hidden", pendingEditTrackerType === "gas");
+
+        if (pendingEditTrackerType === "daily") {
           const allowedCategories = ["Fast Food", "Restaurant", "Groceries", "Parking", "Shopping", "Entertainment", "Travel", "Other"];
-          document.getElementById("editExpenseCategory").value =
-            allowedCategories.includes(expense.category) ? expense.category : "Other";
+          document.getElementById("editExpenseCategory").value = allowedCategories.includes(expense.category)
+            ? expense.category
+            : "Other";
+        } else {
+          document.getElementById("editExpenseCategory").value = "Other";
         }
+
+        document.getElementById("editTransactionTitle").textContent = pendingEditTrackerType === "gas" ? "Edit Gas Spending" : "Edit Spending";
         clearStatus(document.getElementById("editTransactionMessage"));
         editTransactionModal.classList.add("show");
         return;
@@ -1195,7 +1370,10 @@ const firebaseConfig = {
         ? `Delete ${currency(expense.amount)} from ${formatDate(expense.date)}? It will no longer count toward any totals, surplus, or deficit.`
         : "This transaction will be removed and all totals will be recalculated.";
       deleteTransactionModal.classList.add("show");
-    });
+    }
+
+    document.getElementById("historyBody").addEventListener("click", handleHistoryClick);
+    document.getElementById("gasHistoryBody").addEventListener("click", handleHistoryClick);
 
     document.getElementById("cancelEditTransaction").addEventListener("click", () => {
       pendingEditExpenseId = null;
@@ -1215,16 +1393,19 @@ const firebaseConfig = {
       const date = document.getElementById("editExpenseDate").value;
       const amount = Number(document.getElementById("editExpenseAmount").value);
       const description = document.getElementById("editExpenseDescription").value.trim();
-      const category = document.getElementById("editExpenseCategory").value || "Other";
+      const category = pendingEditTrackerType === "gas"
+        ? "Gas"
+        : (document.getElementById("editExpenseCategory").value || "Other");
       const message = document.getElementById("editTransactionMessage");
       const button = document.getElementById("saveEditTransaction");
+      const settings = trackerSettings(pendingEditTrackerType);
 
       if (!date || !Number.isFinite(amount) || amount < 0) {
         showStatus(message, "Enter a valid date and a non-negative amount.", "error");
         return;
       }
 
-      if (date < data.startDate) {
+      if (date < settings.startDate) {
         showStatus(message, "The spending date cannot be before your tracking start date.", "error");
         return;
       }
@@ -1239,15 +1420,21 @@ const firebaseConfig = {
       expense.amount = Math.round(amount * 100) / 100;
       expense.description = description;
       expense.category = category;
+      expense.trackerType = pendingEditTrackerType;
       expense.updatedAt = new Date().toISOString();
 
       button.disabled = true;
       try {
         await saveDataNow();
+        const editedType = pendingEditTrackerType;
         pendingEditExpenseId = null;
         editTransactionModal.classList.remove("show");
         render();
-        showStatus(document.getElementById("formMessage"), "Spending entry updated.", "success");
+        showStatus(
+          editedType === "gas" ? document.getElementById("gasFormMessage") : document.getElementById("formMessage"),
+          editedType === "gas" ? "Gas spending entry updated." : "Spending entry updated.",
+          "success"
+        );
       } catch (error) {
         showStatus(message, friendlyFirebaseError(error), "error");
       } finally {
@@ -1262,33 +1449,27 @@ const firebaseConfig = {
 
     document.getElementById("confirmDeleteTransaction").addEventListener("click", async () => {
       if (!pendingDeleteExpenseId) return;
-      data.deletedExpenseIds = [
-        ...new Set([...(data.deletedExpenseIds || []), pendingDeleteExpenseId])
-      ];
+      data.deletedExpenseIds = [...new Set([...(data.deletedExpenseIds || []), pendingDeleteExpenseId])];
       data.expenses = data.expenses.filter(expense => expense.id !== pendingDeleteExpenseId);
       pendingDeleteExpenseId = null;
       deleteTransactionModal.classList.remove("show");
       render();
-      await saveDataNow();
+      try {
+        await saveDataNow();
+      } catch (error) {
+        showStatus(activeMessageElement(), friendlyFirebaseError(error), "error");
+      }
     });
 
-    document.getElementById("expenseForm").addEventListener("submit", async event => {
-      event.preventDefault();
-
-      const date = document.getElementById("expenseDate").value;
-      const amount = Number(document.getElementById("expenseAmount").value);
-      const description = document.getElementById("expenseDescription").value.trim();
-      const category = document.getElementById("expenseCategory").value || "Other";
-      const message = document.getElementById("formMessage");
-
+    async function addExpense(type, amount, date, description, category, message) {
+      const settings = trackerSettings(type);
       if (!date || !Number.isFinite(amount) || amount < 0) {
         showStatus(message, "Enter a valid date and a non-negative amount.", "error");
-        return;
+        return false;
       }
-
-      if (date < data.startDate) {
+      if (date < settings.startDate) {
         showStatus(message, "The spending date cannot be before your tracking start date.", "error");
-        return;
+        return false;
       }
 
       data.expenses.push({
@@ -1296,19 +1477,50 @@ const firebaseConfig = {
         date,
         amount: Math.round(amount * 100) / 100,
         description,
-        category,
+        category: type === "gas" ? "Gas" : category,
+        trackerType: type,
         createdAt: new Date().toISOString()
       });
-
-      document.getElementById("expenseAmount").value = "";
-      document.getElementById("expenseDescription").value = "";
-      document.getElementById("expenseCategory").value = "";
-      document.getElementById("expenseDate").value = localDateString();
       render();
+      await saveDataNow();
+      return true;
+    }
+
+    document.getElementById("expenseForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const date = document.getElementById("expenseDate").value;
+      const amount = Number(document.getElementById("expenseAmount").value);
+      const description = document.getElementById("expenseDescription").value.trim();
+      const category = document.getElementById("expenseCategory").value || "Other";
+      const message = document.getElementById("formMessage");
 
       try {
-        await saveDataNow();
+        if (!await addExpense("daily", amount, date, description, category, message)) return;
+        document.getElementById("expenseAmount").value = "";
+        document.getElementById("expenseDescription").value = "";
+        document.getElementById("expenseCategory").value = "";
+        document.getElementById("expenseDate").value = localDateString();
+        render();
         showStatus(message, "Spending added. The date has returned to today.", "success");
+      } catch (error) {
+        showStatus(message, friendlyFirebaseError(error), "error");
+      }
+    });
+
+    document.getElementById("gasExpenseForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const date = document.getElementById("gasExpenseDate").value;
+      const amount = Number(document.getElementById("gasExpenseAmount").value);
+      const description = document.getElementById("gasExpenseDescription").value.trim();
+      const message = document.getElementById("gasFormMessage");
+
+      try {
+        if (!await addExpense("gas", amount, date, description, "Gas", message)) return;
+        document.getElementById("gasExpenseAmount").value = "";
+        document.getElementById("gasExpenseDescription").value = "";
+        document.getElementById("gasExpenseDate").value = localDateString();
+        render();
+        showStatus(message, "Gas spending added. The date has returned to today.", "success");
       } catch (error) {
         showStatus(message, friendlyFirebaseError(error), "error");
       }
@@ -1318,41 +1530,37 @@ const firebaseConfig = {
       const date = document.getElementById("expenseDate").value;
       const description = document.getElementById("expenseDescription").value.trim() || "No spending";
       const message = document.getElementById("formMessage");
-
-      if (!date) {
-        showStatus(message, "Choose a date first.", "error");
-        return;
-      }
-
-      if (date < data.startDate) {
-        showStatus(message, "The spending date cannot be before your tracking start date.", "error");
-        return;
-      }
-
-      data.expenses.push({
-        id: makeId(),
-        date,
-        amount: 0,
-        description,
-        category: "No Spending",
-        createdAt: new Date().toISOString()
-      });
-
-      document.getElementById("expenseAmount").value = "";
-      document.getElementById("expenseDescription").value = "";
-      document.getElementById("expenseCategory").value = "";
-      document.getElementById("expenseDate").value = localDateString();
-      render();
-
       try {
-        await saveDataNow();
+        if (!await addExpense("daily", 0, date, description, "No Spending", message)) return;
+        document.getElementById("expenseAmount").value = "";
+        document.getElementById("expenseDescription").value = "";
+        document.getElementById("expenseCategory").value = "";
+        document.getElementById("expenseDate").value = localDateString();
+        render();
         showStatus(message, "$0 spending day added. The date has returned to today.", "success");
       } catch (error) {
         showStatus(message, friendlyFirebaseError(error), "error");
       }
     });
 
-    document.getElementById("expenseDate").addEventListener("change", render);
+    document.getElementById("gasAddZeroDay").addEventListener("click", async () => {
+      const date = document.getElementById("gasExpenseDate").value;
+      const description = document.getElementById("gasExpenseDescription").value.trim() || "No gas spending";
+      const message = document.getElementById("gasFormMessage");
+      try {
+        if (!await addExpense("gas", 0, date, description, "Gas", message)) return;
+        document.getElementById("gasExpenseAmount").value = "";
+        document.getElementById("gasExpenseDescription").value = "";
+        document.getElementById("gasExpenseDate").value = localDateString();
+        render();
+        showStatus(message, "$0 gas spending day added. The date has returned to today.", "success");
+      } catch (error) {
+        showStatus(message, friendlyFirebaseError(error), "error");
+      }
+    });
+
+    document.getElementById("expenseDate").addEventListener("change", () => renderTracker("daily"));
+    document.getElementById("gasExpenseDate").addEventListener("change", () => renderTracker("gas"));
 
     document.getElementById("openSettings").addEventListener("click", () => {
       clearStatus(document.getElementById("settingsMessage"));
@@ -1371,18 +1579,26 @@ const firebaseConfig = {
       const allowance = Number(document.getElementById("dailyAllowance").value);
       const monthlyBudget = Number(document.getElementById("monthlyBudget").value);
       const startDate = document.getElementById("startDate").value;
+      const gasAllowance = Number(document.getElementById("gasDailyAllowance").value);
+      const gasMonthlyBudget = Number(document.getElementById("gasMonthlyBudget").value);
+      const gasStartDate = document.getElementById("gasStartDate").value;
       const theme = document.getElementById("themeSelect").value;
       const message = document.getElementById("settingsMessage");
 
       if (!Number.isFinite(allowance) || allowance <= 0 ||
-          !Number.isFinite(monthlyBudget) || monthlyBudget <= 0 || !startDate) {
-        showStatus(message, "Enter a valid allowance, monthly budget, and start date.", "error");
+          !Number.isFinite(monthlyBudget) || monthlyBudget <= 0 || !startDate ||
+          !Number.isFinite(gasAllowance) || gasAllowance <= 0 ||
+          !Number.isFinite(gasMonthlyBudget) || gasMonthlyBudget <= 0 || !gasStartDate) {
+        showStatus(message, "Enter valid Daily Spending and Gas Spending budgets and start dates.", "error");
         return;
       }
 
       data.dailyAllowance = Math.round(allowance * 100) / 100;
       data.monthlyBudget = Math.round(monthlyBudget * 100) / 100;
       data.startDate = startDate;
+      data.gasDailyAllowance = Math.round(gasAllowance * 100) / 100;
+      data.gasMonthlyBudget = Math.round(gasMonthlyBudget * 100) / 100;
+      data.gasStartDate = gasStartDate;
       data.theme = theme;
       applyTheme(theme);
       render();
@@ -1703,76 +1919,640 @@ const firebaseConfig = {
 
 
     /* ===== Analytics dashboard logic ===== */
+    function dashboardExpenses() {
+      return expensesFor(dashboardMode);
+    }
+
+    function dashboardSettings() {
+      return trackerSettings(dashboardMode);
+    }
+
+    function dashboardPreferences() {
+      return dashboardMode === "gas"
+        ? (data.gasDashboardPreferences || defaultData().gasDashboardPreferences)
+        : (data.dashboardPreferences || defaultData().dashboardPreferences);
+    }
+
     function refreshCategorySuggestions() {
-      const categories = [...new Set(data.expenses.map(e => (e.category || "Uncategorized").trim()).filter(Boolean))].sort();
       const select = document.getElementById("dashboardCategoryFilter");
-      const current = select.value || data.dashboardPreferences.category || "all";
+      const control = document.getElementById("dashboardCategoryControl");
+      if (!select || !control) return;
+
+      if (dashboardMode === "gas") {
+        select.innerHTML = '<option value="all">Gas</option>';
+        select.value = "all";
+        control.classList.add("hidden");
+        return;
+      }
+
+      control.classList.remove("hidden");
+      const categories = [...new Set(dashboardExpenses().map(e => (e.category || "Uncategorized").trim()).filter(Boolean))].sort();
+      const prefs = dashboardPreferences();
+      const current = select.value || prefs.category || "all";
       select.innerHTML = `<option value="all">All categories</option>` + categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
       select.value = categories.includes(current) || current === "all" ? current : "all";
     }
 
-    function dateAdd(dateString, days) { const d=parseLocalDate(dateString); d.setDate(d.getDate()+days); return localDateString(d); }
-    function startOfWeek(dateString) { const d=parseLocalDate(dateString); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); return localDateString(d); }
-    function getDateRange() {
-      const filter=document.getElementById("dashboardDateFilter").value; const today=localDateString(); const now=parseLocalDate(today);
-      let start=today,end=today;
-      if(filter==="7days") start=dateAdd(today,-6);
-      else if(filter==="30days") start=dateAdd(today,-29);
-      else if(filter==="thisMonth") { start=`${today.slice(0,7)}-01`; const d=new Date(now.getFullYear(),now.getMonth()+1,0); end=localDateString(d); }
-      else if(filter==="lastMonth") { const d1=new Date(now.getFullYear(),now.getMonth()-1,1); const d2=new Date(now.getFullYear(),now.getMonth(),0); start=localDateString(d1); end=localDateString(d2); }
-      else if(filter==="thisYear") { start=`${now.getFullYear()}-01-01`; end=`${now.getFullYear()}-12-31`; }
-      else if(filter==="all") { const dates=data.expenses.map(e=>e.date).filter(Boolean).sort(); start=dates[0]||data.startDate||today; end=dates.at(-1)||today; }
-      else if(filter==="custom") { start=document.getElementById("dashboardStartDate").value||today; end=document.getElementById("dashboardEndDate").value||today; if(start>end) [start,end]=[end,start]; }
-      return {start,end,filter};
+    function dateAdd(dateString, days) {
+      const date = parseLocalDate(dateString);
+      date.setDate(date.getDate() + days);
+      return localDateString(date);
     }
-    function filteredExpenses() { const {start,end}=getDateRange(); const cat=document.getElementById("dashboardCategoryFilter").value; return data.expenses.filter(e=>e.date>=start&&e.date<=end&&Number(e.amount)>=0&&(cat==="all"||(e.category||"Uncategorized")===cat)); }
-    function eachDate(start,end) { const out=[]; for(let d=start;d<=end;d=dateAdd(d,1)) out.push(d); return out; }
-    function groupExpenses(expenses,view) { const map=new Map(); expenses.forEach(e=>{ let key=e.date; if(view==="week") key=startOfWeek(e.date); else if(view==="month") key=e.date.slice(0,7); else if(view==="year") key=e.date.slice(0,4); const x=map.get(key)||{key,total:0,count:0,items:[]}; x.total+=Number(e.amount); x.count++; x.items.push(e); map.set(key,x); }); return [...map.values()].sort((a,b)=>a.key.localeCompare(b.key)); }
-    function destroyChart(name){ if(dashboardCharts[name]){ dashboardCharts[name].destroy(); delete dashboardCharts[name]; } }
-    function chartColours(){ const css=getComputedStyle(document.documentElement); return {accent:css.getPropertyValue('--accent').trim(),positive:css.getPropertyValue('--positive').trim(),negative:css.getPropertyValue('--negative').trim(),text:css.getPropertyValue('--text').trim(),border:css.getPropertyValue('--border').trim()}; }
-    function baseChartOptions(onClick){ const c=chartColours(); return {responsive:true,maintainAspectRatio:false,animation:false,animations:{},events:["mousemove","mouseout","click","touchstart","touchmove"],interaction:{mode:"nearest",axis:"xy",intersect:true},hover:{mode:"nearest",intersect:true},plugins:{legend:{labels:{color:c.text}},tooltip:{enabled:true,mode:"nearest",intersect:true,animation:false,callbacks:{afterLabel(ctx){const raw=ctx.rawDetail; return raw?`Purchases: ${raw.count}\nAverage: ${currency(raw.count?raw.total/raw.count:0)}`:"";}}}},scales:{x:{ticks:{color:c.text},grid:{color:c.border}},y:{ticks:{color:c.text,callback:v=>currency(v)},grid:{color:c.border}}},onClick}; }
-    function openDetails(items,title){ document.getElementById("transactionDetailsTitle").textContent=title||"Transaction Details"; document.getElementById("transactionDetailsSummary").textContent=`${items.length} transaction${items.length===1?"":"s"} · ${currency(items.reduce((s,e)=>s+Number(e.amount),0))}`; const body=document.getElementById("transactionDetailsBody"); body.innerHTML=items.sort((a,b)=>a.date.localeCompare(b.date)).map(e=>`<tr><td>${formatDate(e.date)}</td><td>${escapeHtml(e.description||"Spending")}</td><td>${escapeHtml(e.category||"Uncategorized")}</td><td class="amount">${currency(e.amount)}</td></tr>`).join(""); document.getElementById("transactionDetailsEmpty").classList.toggle("hidden",items.length>0); transactionDetailsModal.classList.add("show"); }
-    function streakStats(start,end){ const all=eachDate(start,end); const sums=Object.fromEntries(all.map(d=>[d,0])); data.expenses.filter(e=>e.date>=start&&e.date<=end).forEach(e=>sums[e.date]=(sums[e.date]||0)+Number(e.amount)); const calc=pred=>{let longest=0,current=0,run=0; all.forEach(d=>{if(pred(sums[d]||0)){run++;longest=Math.max(longest,run)}else run=0}); for(let i=all.length-1;i>=0&&pred(sums[all[i]]||0);i--) current++; return {current,longest};}; return {noSpend:calc(v=>v===0),under:calc(v=>v<=Number(data.dailyAllowance)),spending:calc(v=>v>0),overDays:all.filter(d=>(sums[d]||0)>Number(data.dailyAllowance)).length}; }
-    function summaryCard(label,value,cls=""){ return `<div class="analytics-card"><div class="label">${label}</div><div class="value ${cls}">${value}</div></div>`; }
-    function renderDashboard(){
-      refreshCategorySuggestions(); const prefs=data.dashboardPreferences||defaultData().dashboardPreferences; const expenses=filteredExpenses(); const {start,end}=getDateRange(); const days=Math.max(1,daysInclusive(start,end)); const total=expenses.reduce((s,e)=>s+Number(e.amount),0); const positive=expenses.filter(e=>Number(e.amount)>0); const amounts=positive.map(e=>Number(e.amount)); const streaks=streakStats(start,end); const budget=Number(data.dailyAllowance)*days;
-      document.getElementById("dashboardRangeLabel").textContent=`${formatDate(start)} – ${formatDate(end)}`;
-      document.getElementById("dashboardSummary").innerHTML=[summaryCard("Total spent",currency(total)),summaryCard("Average per day",currency(total/days)),summaryCard("Average transaction",currency(positive.length?total/positive.length:0)),summaryCard("Largest purchase",currency(amounts.length?Math.max(...amounts):0)),summaryCard("Smallest purchase",currency(amounts.length?Math.min(...amounts):0)),summaryCard("Total purchases",String(positive.length)),summaryCard("Days under budget",String(eachDate(start,end).filter(d=>data.expenses.filter(e=>e.date===d).reduce((s,e)=>s+Number(e.amount),0)<=Number(data.dailyAllowance)).length),"positive"),summaryCard("Days over budget",String(streaks.overDays),streaks.overDays?"negative":"positive"),summaryCard("Current no-spend streak",`${streaks.noSpend.current} days`),summaryCard("Longest no-spend streak",`${streaks.noSpend.longest} days`)].join("");
-      renderSpendingChart(expenses); renderBudgetChart(start,end); renderBalanceChart(start,end); renderCategoryChart(expenses); renderMonthlyChart(); renderHeatmap(); renderStreaks(streaks); renderPredictions();
-      data.dashboardPreferences={dateFilter:document.getElementById("dashboardDateFilter").value,groupView:document.getElementById("dashboardGroupView").value,chartType:document.getElementById("dashboardChartType").value,category:document.getElementById("dashboardCategoryFilter").value};
-    }
-    function renderSpendingChart(expenses){ destroyChart("spending"); const view=document.getElementById("dashboardGroupView").value; const groups=groupExpenses(expenses,view); const c=chartColours(); const details=groups.map(g=>({total:g.total,count:g.count,items:g.items})); dashboardCharts.spending=new Chart(document.getElementById("spendingChart"),{type:document.getElementById("dashboardChartType").value,data:{labels:groups.map(g=>view==="day"?formatDate(g.key):g.key),datasets:[{label:"Spending",data:groups.map((g,i)=>Object.assign(new Number(g.total),{rawDetail:details[i]})),borderColor:c.accent,backgroundColor:c.accent,tension:.25}]},options:{...baseChartOptions((evt,elements)=>{if(elements[0])openDetails(groups[elements[0].index].items,`Spending: ${groups[elements[0].index].key}`)}),plugins:{...baseChartOptions().plugins,tooltip:{callbacks:{label:ctx=>`Spent: ${currency(ctx.parsed.y)}`,afterLabel:ctx=>{const g=groups[ctx.dataIndex];return `Purchases: ${g.count}\nAverage: ${currency(g.count?g.total/g.count:0)}`}}}}}}); }
-    function renderBudgetChart(start,end){ destroyChart("budget"); const dates=eachDate(start,end); const actual=dates.map(d=>data.expenses.filter(e=>e.date===d).reduce((s,e)=>s+Number(e.amount),0)); const allowance=dates.map(()=>Number(data.dailyAllowance)); const total=actual.reduce((a,b)=>a+b,0),budget=allowance.reduce((a,b)=>a+b,0),remaining=budget-total,pct=budget?total/budget*100:0,c=chartColours(); document.getElementById("budgetMessage").textContent=Number(data.dailyAllowance)>0?"":"Set a daily allowance in Settings to view budget comparisons."; document.getElementById("budgetMetrics").innerHTML=`<div class="metric-row"><span>Total budget</span><strong>${currency(budget)}</strong></div><div class="metric-row"><span>Actual spending</span><strong>${currency(total)}</strong></div><div class="metric-row"><span>${remaining>=0?"Remaining":"Over budget"}</span><strong class="${remaining>=0?"positive":"negative"}">${currency(Math.abs(remaining))}</strong></div><div class="metric-row"><span>Budget used</span><strong>${pct.toFixed(1)}%</strong></div>`; document.getElementById("budgetProgress").innerHTML=`<div class="label">Selected-period budget</div><div class="value">${currency(total)} / ${currency(budget)}</div><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,Math.max(0,pct))}%"></div></div><p class="note">${remaining>=0?`${currency(remaining)} remaining`:`${currency(-remaining)} over budget`}</p><hr class="divider"><div class="label">Monthly budget</div><div class="value">${currency(monthSpentFor(localDateString()))} / ${currency(data.monthlyBudget)}</div><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,monthSpentFor(localDateString())/Number(data.monthlyBudget)*100||0)}%"></div></div>`; dashboardCharts.budget=new Chart(document.getElementById("budgetChart"),{type:"bar",data:{labels:dates.map(formatDate),datasets:[{label:"Daily allowance",data:allowance,backgroundColor:c.positive},{label:"Actual",data:actual,backgroundColor:c.accent}]},options:baseChartOptions((evt,els)=>{if(els[0]){const d=dates[els[0].index];openDetails(data.expenses.filter(e=>e.date===d),formatDate(d));}})}); }
-    function renderBalanceChart(start,end){ destroyChart("balance"); const dates=eachDate(start,end); let running=0; const values=dates.map(d=>{running+=Number(data.dailyAllowance)-data.expenses.filter(e=>e.date===d).reduce((s,e)=>s+Number(e.amount),0);return running}); const c=chartColours(); dashboardCharts.balance=new Chart(document.getElementById("balanceChart"),{type:"line",data:{labels:dates.map(formatDate),datasets:[{label:"Running budget position",data:values,borderColor:c.accent,backgroundColor:c.accent,tension:.2,fill:false}]},options:baseChartOptions()}); }
-    function renderCategoryChart(expenses){ destroyChart("category"); const map=new Map(); expenses.forEach(e=>{const k=e.category||"Uncategorized"; const x=map.get(k)||{total:0,count:0,items:[]};x.total+=Number(e.amount);x.count++;x.items.push(e);map.set(k,x)}); const rows=[...map.entries()].sort((a,b)=>b[1].total-a[1].total),total=rows.reduce((s,r)=>s+r[1].total,0); document.getElementById("categoryList").innerHTML=`<button class="category-button ${document.getElementById("dashboardCategoryFilter").value==="all"?"active":""}" data-category="all"><span>All categories</span><strong>${currency(total)}</strong></button>`+rows.map(([k,v])=>`<button class="category-button ${document.getElementById("dashboardCategoryFilter").value===k?"active":""}" data-category="${escapeHtml(k)}"><span>${escapeHtml(k)}<small class="note"> ${v.count} purchases · ${total?(v.total/total*100).toFixed(1):0}%</small></span><strong>${currency(v.total)}</strong></button>`).join(""); const c=chartColours(); dashboardCharts.category=new Chart(document.getElementById("categoryChart"),{type:"doughnut",data:{labels:rows.map(r=>r[0]),datasets:[{data:rows.map(r=>r[1].total),backgroundColor:rows.map((_,i)=>`hsl(${(i*57)%360} 65% 55%)`)}]},options:{responsive:true,maintainAspectRatio:false,animation:false,animations:{},events:["mousemove","mouseout","click","touchstart","touchmove"],interaction:{mode:"nearest",axis:"xy",intersect:true},hover:{mode:"nearest",intersect:true},plugins:{legend:{position:"bottom",labels:{color:c.text}},tooltip:{enabled:true,mode:"nearest",intersect:true,animation:false}},onClick:(evt,els)=>{if(els[0])openDetails(rows[els[0].index][1].items,rows[els[0].index][0])}}}); }
-    function renderMonthlyChart(){ destroyChart("monthly"); const groups=groupExpenses(data.expenses,"month").slice(-12),c=chartColours(); dashboardCharts.monthly=new Chart(document.getElementById("monthlyChart"),{type:"bar",data:{labels:groups.map(g=>g.key),datasets:[{label:"Monthly spending",data:groups.map(g=>g.total),backgroundColor:c.accent}]},options:baseChartOptions((evt,els)=>{if(els[0])openDetails(groups[els[0].index].items,groups[els[0].index].key)})}); const current=groups.at(-1),prev=groups.at(-2); let msg="No previous month available for comparison."; if(current&&prev){const diff=current.total-prev.total;if(prev.total===0) msg=diff===0?"No change from last month.":"Previous month had no spending."; else msg=`${Math.abs(diff/prev.total*100).toFixed(1)}% ${diff>=0?"more":"less"} than last month.`} document.getElementById("monthlyComparisonText").textContent=msg; }
-    function renderHeatmap(){ const y=heatmapMonth.getFullYear(),m=heatmapMonth.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0); document.getElementById("heatmapTitle").textContent=first.toLocaleDateString("en-CA",{month:"long",year:"numeric"}); const daily={}; data.expenses.forEach(e=>daily[e.date]=(daily[e.date]||0)+Number(e.amount)); const max=Math.max(0,...Object.entries(daily).filter(([d])=>d.startsWith(`${y}-${String(m+1).padStart(2,"0")}`)).map(([,v])=>v)); let html=""; const blanks=(first.getDay()+6)%7; for(let i=0;i<blanks;i++)html+='<div class="heatmap-day blank"></div>'; for(let d=1;d<=last.getDate();d++){const key=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`,v=daily[key]||0,level=v===0?0:Math.min(4,Math.ceil(v/(max||1)*4));html+=`<button class="heatmap-day" data-date="${key}" data-level="${level}" title="${formatDate(key)}: ${currency(v)}"><span>${d}</span><span class="day-total">${v?currency(v):"$0"}</span></button>`} document.getElementById("heatmap").innerHTML=html; }
-    function renderStreaks(s){ document.getElementById("streakMetrics").innerHTML=`<div class="metric-row"><span>Current under-budget streak</span><strong>${s.under.current} days</strong></div><div class="metric-row"><span>Longest under-budget streak</span><strong>${s.under.longest} days</strong></div><div class="metric-row"><span>Current no-spend streak</span><strong>${s.noSpend.current} days</strong></div><div class="metric-row"><span>Longest no-spend streak</span><strong>${s.noSpend.longest} days</strong></div><div class="metric-row"><span>Current spending-day streak</span><strong>${s.spending.current} days</strong></div><div class="metric-row"><span>Longest spending-day streak</span><strong>${s.spending.longest} days</strong></div><div class="metric-row"><span>Days over budget</span><strong>${s.overDays}</strong></div>`; }
-    function renderPredictions(){ const today=new Date(),y=today.getFullYear(),m=today.getMonth(),monthKey=`${y}-${String(m+1).padStart(2,"0")}`,elapsed=today.getDate(),days=new Date(y,m+1,0).getDate(),spent=data.expenses.filter(e=>e.date.startsWith(monthKey)).reduce((s,e)=>s+Number(e.amount),0),projected=elapsed?spent/elapsed*days:0,budget=Number(data.monthlyBudget),remaining=budget-spent,remainingDays=Math.max(0,days-elapsed),daily=remainingDays?remaining/remainingDays:0; const prevDate=new Date(y,m-1,1),prevKey=`${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,"0")}`,prev=data.expenses.filter(e=>e.date.startsWith(prevKey)).reduce((s,e)=>s+Number(e.amount),0); const comparison=prev?`${Math.abs((spent-prev)/prev*100).toFixed(1)}% ${spent>=prev?"more":"less"} than last month so far`:`No previous-month spending is available for comparison`; document.getElementById("predictions").innerHTML=`<div class="prediction">At your current spending rate, you are projected to spend <strong>${currency(projected)}</strong> this month.</div><div class="prediction">${comparison}.</div><div class="prediction">You can spend <strong>${currency(Math.max(0,daily))} per day</strong> for the rest of the month and remain within budget.</div><div class="prediction">You are projected to be <strong class="${projected<=budget?"positive":"negative"}">${currency(Math.abs(budget-projected))} ${projected<=budget?"under":"over"} budget</strong>.</div>`; }
-    function csvEscape(v){const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
-    function downloadCsv(name,rows){const blob=new Blob(["\ufeff"+rows.map(r=>r.map(csvEscape).join(",")).join("\n")],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
 
-    document.getElementById("showTrackerPage").addEventListener("click",()=>{document.getElementById("trackerPage").classList.remove("hidden");document.getElementById("dashboardPage").classList.add("hidden");document.getElementById("showTrackerPage").classList.add("active");document.getElementById("showDashboardPage").classList.remove("active")});
-    document.getElementById("showDashboardPage").addEventListener("click",()=>{document.getElementById("trackerPage").classList.add("hidden");document.getElementById("dashboardPage").classList.remove("hidden");document.getElementById("showDashboardPage").classList.add("active");document.getElementById("showTrackerPage").classList.remove("active"); const p=data.dashboardPreferences||defaultData().dashboardPreferences; document.getElementById("dashboardDateFilter").value=p.dateFilter;document.getElementById("dashboardGroupView").value=p.groupView;document.getElementById("dashboardChartType").value=p.chartType;refreshCategorySuggestions();document.getElementById("dashboardCategoryFilter").value=p.category||"all";document.getElementById("customDateRange").classList.toggle("hidden",p.dateFilter!=="custom");renderDashboard()});
+    function startOfWeek(dateString) {
+      const date = parseLocalDate(dateString);
+      const day = (date.getDay() + 6) % 7;
+      date.setDate(date.getDate() - day);
+      return localDateString(date);
+    }
+
+    function getDateRange() {
+      const filter = document.getElementById("dashboardDateFilter").value;
+      const today = localDateString();
+      const now = parseLocalDate(today);
+      const source = dashboardExpenses();
+      const settings = dashboardSettings();
+      let start = today;
+      let end = today;
+
+      if (filter === "7days") start = dateAdd(today, -6);
+      else if (filter === "30days") start = dateAdd(today, -29);
+      else if (filter === "thisMonth") {
+        start = `${today.slice(0, 7)}-01`;
+        end = localDateString(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+      } else if (filter === "lastMonth") {
+        start = localDateString(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+        end = localDateString(new Date(now.getFullYear(), now.getMonth(), 0));
+      } else if (filter === "thisYear") {
+        start = `${now.getFullYear()}-01-01`;
+        end = `${now.getFullYear()}-12-31`;
+      } else if (filter === "all") {
+        const dates = source.map(e => e.date).filter(Boolean).sort();
+        start = dates[0] || settings.startDate || today;
+        end = dates.at(-1) || today;
+      } else if (filter === "custom") {
+        start = document.getElementById("dashboardStartDate").value || today;
+        end = document.getElementById("dashboardEndDate").value || today;
+        if (start > end) [start, end] = [end, start];
+      }
+      return { start, end, filter };
+    }
+
+    function filteredExpenses() {
+      const { start, end } = getDateRange();
+      const category = dashboardMode === "gas" ? "all" : document.getElementById("dashboardCategoryFilter").value;
+      return dashboardExpenses().filter(expense =>
+        expense.date >= start &&
+        expense.date <= end &&
+        Number(expense.amount) >= 0 &&
+        (category === "all" || (expense.category || "Uncategorized") === category)
+      );
+    }
+
+    function eachDate(start, end) {
+      const dates = [];
+      for (let date = start; date <= end; date = dateAdd(date, 1)) dates.push(date);
+      return dates;
+    }
+
+    function groupExpenses(expenses, view) {
+      const grouped = new Map();
+      expenses.forEach(expense => {
+        let key = expense.date;
+        if (view === "week") key = startOfWeek(expense.date);
+        else if (view === "month") key = expense.date.slice(0, 7);
+        else if (view === "year") key = expense.date.slice(0, 4);
+        const group = grouped.get(key) || { key, total: 0, count: 0, items: [] };
+        group.total += Number(expense.amount);
+        group.count += 1;
+        group.items.push(expense);
+        grouped.set(key, group);
+      });
+      return [...grouped.values()].sort((a, b) => a.key.localeCompare(b.key));
+    }
+
+    function destroyChart(name) {
+      if (dashboardCharts[name]) {
+        dashboardCharts[name].destroy();
+        delete dashboardCharts[name];
+      }
+    }
+
+    function chartColours() {
+      const css = getComputedStyle(document.documentElement);
+      return {
+        accent: css.getPropertyValue("--accent").trim(),
+        positive: css.getPropertyValue("--positive").trim(),
+        negative: css.getPropertyValue("--negative").trim(),
+        text: css.getPropertyValue("--text").trim(),
+        border: css.getPropertyValue("--border").trim()
+      };
+    }
+
+    function baseChartOptions(onClick) {
+      const colours = chartColours();
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        animations: {},
+        events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
+        interaction: { mode: "nearest", axis: "xy", intersect: true },
+        hover: { mode: "nearest", intersect: true },
+        plugins: {
+          legend: { labels: { color: colours.text } },
+          tooltip: { enabled: true, mode: "nearest", intersect: true, animation: false }
+        },
+        scales: {
+          x: { ticks: { color: colours.text }, grid: { color: colours.border } },
+          y: { ticks: { color: colours.text, callback: value => currency(value) }, grid: { color: colours.border } }
+        },
+        onClick
+      };
+    }
+
+    function openDetails(items, title) {
+      const sortedItems = [...items].sort((a, b) => a.date.localeCompare(b.date));
+      document.getElementById("transactionDetailsTitle").textContent = title || "Transaction Details";
+      document.getElementById("transactionDetailsSummary").textContent = `${sortedItems.length} transaction${sortedItems.length === 1 ? "" : "s"} · ${currency(sortedItems.reduce((sum, expense) => sum + Number(expense.amount), 0))}`;
+      document.getElementById("transactionDetailsBody").innerHTML = sortedItems.map(expense => `
+        <tr>
+          <td>${formatDate(expense.date)}</td>
+          <td>${escapeHtml(expense.description || (dashboardMode === "gas" ? "Gas" : "Spending"))}</td>
+          <td>${escapeHtml(expense.category || "Uncategorized")}</td>
+          <td class="amount">${currency(expense.amount)}</td>
+        </tr>
+      `).join("");
+      document.getElementById("transactionDetailsEmpty").classList.toggle("hidden", sortedItems.length > 0);
+      transactionDetailsModal.classList.add("show");
+    }
+
+    function streakStats(start, end) {
+      const dates = eachDate(start, end);
+      const sums = Object.fromEntries(dates.map(date => [date, 0]));
+      const allowance = dashboardSettings().dailyAllowance;
+      dashboardExpenses()
+        .filter(expense => expense.date >= start && expense.date <= end)
+        .forEach(expense => sums[expense.date] = (sums[expense.date] || 0) + Number(expense.amount));
+
+      const calculate = predicate => {
+        let longest = 0;
+        let current = 0;
+        let run = 0;
+        dates.forEach(date => {
+          if (predicate(sums[date] || 0)) {
+            run += 1;
+            longest = Math.max(longest, run);
+          } else {
+            run = 0;
+          }
+        });
+        for (let index = dates.length - 1; index >= 0 && predicate(sums[dates[index]] || 0); index -= 1) {
+          current += 1;
+        }
+        return { current, longest };
+      };
+
+      return {
+        noSpend: calculate(value => value === 0),
+        under: calculate(value => value <= allowance),
+        spending: calculate(value => value > 0),
+        overDays: dates.filter(date => (sums[date] || 0) > allowance).length
+      };
+    }
+
+    function summaryCard(label, value, className = "") {
+      return `<div class="analytics-card"><div class="label">${label}</div><div class="value ${className}">${value}</div></div>`;
+    }
+
+    function renderDashboard() {
+      refreshCategorySuggestions();
+      const expenses = filteredExpenses();
+      const { start, end } = getDateRange();
+      const days = Math.max(1, daysInclusive(start, end));
+      const total = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+      const positive = expenses.filter(expense => Number(expense.amount) > 0);
+      const amounts = positive.map(expense => Number(expense.amount));
+      const streaks = streakStats(start, end);
+      const allDashboardExpenses = dashboardExpenses();
+      const allowance = dashboardSettings().dailyAllowance;
+
+      document.getElementById("dashboardPageHeading").textContent = dashboardMode === "gas"
+        ? "Gas Spending Dashboard"
+        : "Daily Spending Dashboard";
+      document.getElementById("dashboardRangeLabel").textContent = `${formatDate(start)} – ${formatDate(end)}`;
+      document.getElementById("dashboardSummary").innerHTML = [
+        summaryCard("Total spent", currency(total)),
+        summaryCard("Average per day", currency(total / days)),
+        summaryCard("Average transaction", currency(positive.length ? total / positive.length : 0)),
+        summaryCard("Largest purchase", currency(amounts.length ? Math.max(...amounts) : 0)),
+        summaryCard("Smallest purchase", currency(amounts.length ? Math.min(...amounts) : 0)),
+        summaryCard("Total purchases", String(positive.length)),
+        summaryCard("Days under budget", String(eachDate(start, end).filter(date => allDashboardExpenses.filter(expense => expense.date === date).reduce((sum, expense) => sum + Number(expense.amount), 0) <= allowance).length), "positive"),
+        summaryCard("Days over budget", String(streaks.overDays), streaks.overDays ? "negative" : "positive"),
+        summaryCard("Current no-spend streak", `${streaks.noSpend.current} days`),
+        summaryCard("Longest no-spend streak", `${streaks.noSpend.longest} days`)
+      ].join("");
+
+      renderSpendingChart(expenses);
+      renderBudgetChart(start, end);
+      renderBalanceChart(start, end);
+      renderCategoryChart(expenses);
+      renderMonthlyChart();
+      renderHeatmap();
+      renderStreaks(streaks);
+      renderPredictions();
+    }
+
+    function renderSpendingChart(expenses) {
+      destroyChart("spending");
+      const view = document.getElementById("dashboardGroupView").value;
+      const groups = groupExpenses(expenses, view);
+      const colours = chartColours();
+      dashboardCharts.spending = new Chart(document.getElementById("spendingChart"), {
+        type: document.getElementById("dashboardChartType").value,
+        data: {
+          labels: groups.map(group => view === "day" ? formatDate(group.key) : group.key),
+          datasets: [{
+            label: dashboardMode === "gas" ? "Gas Spending" : "Spending",
+            data: groups.map(group => group.total),
+            borderColor: colours.accent,
+            backgroundColor: colours.accent,
+            tension: 0.25
+          }]
+        },
+        options: {
+          ...baseChartOptions((event, elements) => {
+            if (elements[0]) {
+              const group = groups[elements[0].index];
+              openDetails(group.items, `${dashboardMode === "gas" ? "Gas Spending" : "Spending"}: ${group.key}`);
+            }
+          }),
+          plugins: {
+            ...baseChartOptions().plugins,
+            tooltip: {
+              callbacks: {
+                label: context => `Spent: ${currency(context.parsed.y)}`,
+                afterLabel: context => {
+                  const group = groups[context.dataIndex];
+                  return `Purchases: ${group.count}\nAverage: ${currency(group.count ? group.total / group.count : 0)}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderBudgetChart(start, end) {
+      destroyChart("budget");
+      const source = dashboardExpenses();
+      const settings = dashboardSettings();
+      const dates = eachDate(start, end);
+      const actual = dates.map(date => source.filter(expense => expense.date === date).reduce((sum, expense) => sum + Number(expense.amount), 0));
+      const allowance = dates.map(() => settings.dailyAllowance);
+      const total = actual.reduce((sum, value) => sum + value, 0);
+      const budget = allowance.reduce((sum, value) => sum + value, 0);
+      const remaining = budget - total;
+      const percentage = budget ? total / budget * 100 : 0;
+      const colours = chartColours();
+      const currentMonthSpent = monthSpentFor(localDateString(), dashboardMode);
+      const monthlyPercentage = settings.monthlyBudget ? currentMonthSpent / settings.monthlyBudget * 100 : 0;
+
+      document.getElementById("budgetMessage").textContent = settings.dailyAllowance > 0 ? "" : "Set a daily allowance in Settings to view budget comparisons.";
+      document.getElementById("budgetMetrics").innerHTML = `
+        <div class="metric-row"><span>Total budget</span><strong>${currency(budget)}</strong></div>
+        <div class="metric-row"><span>Actual spending</span><strong>${currency(total)}</strong></div>
+        <div class="metric-row"><span>${remaining >= 0 ? "Remaining" : "Over budget"}</span><strong class="${remaining >= 0 ? "positive" : "negative"}">${currency(Math.abs(remaining))}</strong></div>
+        <div class="metric-row"><span>Budget used</span><strong>${percentage.toFixed(1)}%</strong></div>`;
+      document.getElementById("budgetProgress").innerHTML = `
+        <div class="label">Selected-period budget</div>
+        <div class="value">${currency(total)} / ${currency(budget)}</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, Math.max(0, percentage))}%"></div></div>
+        <p class="note">${remaining >= 0 ? `${currency(remaining)} remaining` : `${currency(-remaining)} over budget`}</p>
+        <hr class="divider">
+        <div class="label">Monthly budget</div>
+        <div class="value">${currency(currentMonthSpent)} / ${currency(settings.monthlyBudget)}</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, Math.max(0, monthlyPercentage))}%"></div></div>`;
+
+      dashboardCharts.budget = new Chart(document.getElementById("budgetChart"), {
+        type: "bar",
+        data: {
+          labels: dates.map(formatDate),
+          datasets: [
+            { label: "Daily allowance", data: allowance, backgroundColor: colours.positive },
+            { label: "Actual", data: actual, backgroundColor: colours.accent }
+          ]
+        },
+        options: baseChartOptions((event, elements) => {
+          if (elements[0]) {
+            const date = dates[elements[0].index];
+            openDetails(source.filter(expense => expense.date === date), formatDate(date));
+          }
+        })
+      });
+    }
+
+    function renderBalanceChart(start, end) {
+      destroyChart("balance");
+      const source = dashboardExpenses();
+      const allowance = dashboardSettings().dailyAllowance;
+      const dates = eachDate(start, end);
+      let running = 0;
+      const values = dates.map(date => {
+        running += allowance - source.filter(expense => expense.date === date).reduce((sum, expense) => sum + Number(expense.amount), 0);
+        return running;
+      });
+      const colours = chartColours();
+      dashboardCharts.balance = new Chart(document.getElementById("balanceChart"), {
+        type: "line",
+        data: {
+          labels: dates.map(formatDate),
+          datasets: [{ label: "Running budget position", data: values, borderColor: colours.accent, backgroundColor: colours.accent, tension: 0.2, fill: false }]
+        },
+        options: baseChartOptions()
+      });
+    }
+
+    function renderCategoryChart(expenses) {
+      destroyChart("category");
+      const grouped = new Map();
+      expenses.forEach(expense => {
+        const category = dashboardMode === "gas" ? "Gas" : (expense.category || "Uncategorized");
+        const item = grouped.get(category) || { total: 0, items: [] };
+        item.total += Number(expense.amount);
+        item.items.push(expense);
+        grouped.set(category, item);
+      });
+      const rows = [...grouped.entries()].sort((a, b) => b[1].total - a[1].total);
+      const total = rows.reduce((sum, row) => sum + row[1].total, 0);
+      document.getElementById("categoryList").innerHTML = rows.length
+        ? rows.map(([category, value]) => `<button class="category-button" data-category="${escapeHtml(category)}"><span>${escapeHtml(category)}<br><small>${total ? (value.total / total * 100).toFixed(1) : 0}%</small></span><strong>${currency(value.total)}</strong></button>`).join("")
+        : '<div class="dashboard-empty">No spending in this range.</div>';
+      const colours = chartColours();
+      dashboardCharts.category = new Chart(document.getElementById("categoryChart"), {
+        type: "doughnut",
+        data: {
+          labels: rows.map(row => row[0]),
+          datasets: [{ data: rows.map(row => row[1].total), backgroundColor: rows.map((_, index) => `hsl(${(index * 57) % 360} 65% 55%)`) }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          animations: {},
+          plugins: { legend: { position: "bottom", labels: { color: colours.text } } },
+          onClick: (event, elements) => {
+            if (elements[0]) {
+              const row = rows[elements[0].index];
+              openDetails(row[1].items, row[0]);
+            }
+          }
+        }
+      });
+    }
+
+    function renderMonthlyChart() {
+      destroyChart("monthly");
+      const groups = groupExpenses(dashboardExpenses(), "month").slice(-12);
+      const colours = chartColours();
+      dashboardCharts.monthly = new Chart(document.getElementById("monthlyChart"), {
+        type: "bar",
+        data: { labels: groups.map(group => group.key), datasets: [{ label: "Monthly spending", data: groups.map(group => group.total), backgroundColor: colours.accent }] },
+        options: baseChartOptions((event, elements) => {
+          if (elements[0]) {
+            const group = groups[elements[0].index];
+            openDetails(group.items, group.key);
+          }
+        })
+      });
+      const current = groups.at(-1);
+      const previous = groups.at(-2);
+      let message = "No previous month available for comparison.";
+      if (current && previous) {
+        const difference = current.total - previous.total;
+        if (previous.total === 0) message = difference === 0 ? "No change from last month." : "Previous month had no spending.";
+        else message = `${Math.abs(difference / previous.total * 100).toFixed(1)}% ${difference >= 0 ? "more" : "less"} than last month.`;
+      }
+      document.getElementById("monthlyComparisonText").textContent = message;
+    }
+
+    function renderHeatmap() {
+      const source = dashboardExpenses();
+      const year = heatmapMonth.getFullYear();
+      const month = heatmapMonth.getMonth();
+      const first = new Date(year, month, 1);
+      const last = new Date(year, month + 1, 0);
+      document.getElementById("heatmapTitle").textContent = first.toLocaleDateString("en-CA", { month: "long", year: "numeric" });
+      const daily = {};
+      source.forEach(expense => daily[expense.date] = (daily[expense.date] || 0) + Number(expense.amount));
+      const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+      const maximum = Math.max(0, ...Object.entries(daily).filter(([date]) => date.startsWith(prefix)).map(([, value]) => value));
+      let html = "";
+      const blanks = (first.getDay() + 6) % 7;
+      for (let index = 0; index < blanks; index += 1) html += '<div class="heatmap-day blank"></div>';
+      for (let day = 1; day <= last.getDate(); day += 1) {
+        const key = `${prefix}-${String(day).padStart(2, "0")}`;
+        const value = daily[key] || 0;
+        const level = value === 0 ? 0 : Math.min(4, Math.ceil(value / (maximum || 1) * 4));
+        html += `<button class="heatmap-day" data-date="${key}" data-level="${level}" title="${formatDate(key)}: ${currency(value)}"><span>${day}</span><span class="day-total">${value ? currency(value) : "$0"}</span></button>`;
+      }
+      document.getElementById("heatmap").innerHTML = html;
+    }
+
+    function renderStreaks(streaks) {
+      document.getElementById("streakMetrics").innerHTML = `
+        <div class="metric-row"><span>Current under-budget streak</span><strong>${streaks.under.current} days</strong></div>
+        <div class="metric-row"><span>Longest under-budget streak</span><strong>${streaks.under.longest} days</strong></div>
+        <div class="metric-row"><span>Current no-spend streak</span><strong>${streaks.noSpend.current} days</strong></div>
+        <div class="metric-row"><span>Longest no-spend streak</span><strong>${streaks.noSpend.longest} days</strong></div>
+        <div class="metric-row"><span>Current spending-day streak</span><strong>${streaks.spending.current} days</strong></div>
+        <div class="metric-row"><span>Longest spending-day streak</span><strong>${streaks.spending.longest} days</strong></div>
+        <div class="metric-row"><span>Days over budget</span><strong>${streaks.overDays}</strong></div>`;
+    }
+
+    function renderPredictions() {
+      const source = dashboardExpenses();
+      const settings = dashboardSettings();
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+      const elapsed = today.getDate();
+      const days = new Date(year, month + 1, 0).getDate();
+      const spent = source.filter(expense => expense.date.startsWith(monthKey)).reduce((sum, expense) => sum + Number(expense.amount), 0);
+      const projected = elapsed ? spent / elapsed * days : 0;
+      const remaining = settings.monthlyBudget - spent;
+      const remainingDays = Math.max(0, days - elapsed);
+      const daily = remainingDays ? remaining / remainingDays : 0;
+      const previousDate = new Date(year, month - 1, 1);
+      const previousKey = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, "0")}`;
+      const previous = source.filter(expense => expense.date.startsWith(previousKey)).reduce((sum, expense) => sum + Number(expense.amount), 0);
+      const comparison = previous
+        ? `${Math.abs((spent - previous) / previous * 100).toFixed(1)}% ${spent >= previous ? "more" : "less"} than last month so far`
+        : "No previous-month spending is available for comparison";
+
+      document.getElementById("predictions").innerHTML = `
+        <div class="prediction">At your current spending rate, you are projected to spend <strong>${currency(projected)}</strong> this month.</div>
+        <div class="prediction">${comparison}.</div>
+        <div class="prediction">You can spend <strong>${currency(Math.max(0, daily))} per day</strong> for the rest of the month and remain within budget.</div>
+        <div class="prediction">You are projected to be <strong class="${projected <= settings.monthlyBudget ? "positive" : "negative"}">${currency(Math.abs(settings.monthlyBudget - projected))} ${projected <= settings.monthlyBudget ? "under" : "over"} budget</strong>.</div>`;
+    }
+
+    function csvEscape(value) {
+      const string = String(value ?? "");
+      return /[",\n]/.test(string) ? `"${string.replace(/"/g, '""')}"` : string;
+    }
+
+    function downloadCsv(name, rows) {
+      const blob = new Blob(["\ufeff" + rows.map(row => row.map(csvEscape).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = name;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function setNavigationSection(section) {
+      const dailyOpen = section === "daily";
+      document.getElementById("dailySubmenu").classList.toggle("hidden", !dailyOpen);
+      document.getElementById("gasSubmenu").classList.toggle("hidden", dailyOpen);
+      document.getElementById("dailyNavToggle").setAttribute("aria-expanded", String(dailyOpen));
+      document.getElementById("gasNavToggle").setAttribute("aria-expanded", String(!dailyOpen));
+      document.getElementById("dailyNavArrow").textContent = dailyOpen ? "▼" : "▶";
+      document.getElementById("gasNavArrow").textContent = dailyOpen ? "▶" : "▼";
+      document.getElementById("dailyNavToggle").classList.toggle("active", dailyOpen);
+      document.getElementById("gasNavToggle").classList.toggle("active", !dailyOpen);
+    }
+
+    function updateActiveNavigation(page) {
+      ["showTrackerPage", "showDashboardPage", "showGasTrackerPage", "showGasDashboardPage"].forEach(id => {
+        document.getElementById(id).classList.remove("active");
+      });
+      const buttonMap = {
+        dailyTracker: "showTrackerPage",
+        dailyDashboard: "showDashboardPage",
+        gasTracker: "showGasTrackerPage",
+        gasDashboard: "showGasDashboardPage"
+      };
+      document.getElementById(buttonMap[page]).classList.add("active");
+    }
+
+    function showPage(page) {
+      activePage = page;
+      const isGas = page.startsWith("gas");
+      const isDashboard = page.endsWith("Dashboard");
+      setNavigationSection(isGas ? "gas" : "daily");
+      updateActiveNavigation(page);
+
+      document.getElementById("trackerPage").classList.toggle("hidden", page !== "dailyTracker");
+      document.getElementById("gasTrackerPage").classList.toggle("hidden", page !== "gasTracker");
+      document.getElementById("dashboardPage").classList.toggle("hidden", !isDashboard);
+
+      if (page === "dailyTracker") {
+        document.getElementById("appHeaderTitle").textContent = "Daily Spending Tracker";
+        document.getElementById("appHeaderSubtitle").textContent = "Spending less than your daily allowance creates a surplus. Spending more reduces future available money.";
+      } else if (page === "gasTracker") {
+        document.getElementById("appHeaderTitle").textContent = "Gas Spending Tracker";
+        document.getElementById("appHeaderSubtitle").textContent = "Track gas spending separately. Every entry is automatically categorized as Gas.";
+      } else {
+        dashboardMode = isGas ? "gas" : "daily";
+        document.getElementById("appHeaderTitle").textContent = isGas ? "Gas Spending Dashboard" : "Daily Spending Dashboard";
+        document.getElementById("appHeaderSubtitle").textContent = isGas
+          ? "Review gas spending trends, budgets, comparisons, and predictions."
+          : "Review daily spending trends, budgets, categories, comparisons, and predictions.";
+        loadDashboardPreferences();
+        renderDashboard();
+      }
+    }
+
+    function loadDashboardPreferences() {
+      const preferences = dashboardPreferences();
+      document.getElementById("dashboardDateFilter").value = preferences.dateFilter;
+      document.getElementById("dashboardGroupView").value = preferences.groupView;
+      document.getElementById("dashboardChartType").value = preferences.chartType;
+      refreshCategorySuggestions();
+      document.getElementById("dashboardCategoryFilter").value = dashboardMode === "gas" ? "all" : (preferences.category || "all");
+      document.getElementById("customDateRange").classList.toggle("hidden", preferences.dateFilter !== "custom");
+    }
+
     function saveDashboardPreferences() {
-      data.dashboardPreferences = {
+      const preferences = {
         dateFilter: document.getElementById("dashboardDateFilter").value,
         groupView: document.getElementById("dashboardGroupView").value,
         chartType: document.getElementById("dashboardChartType").value,
-        category: document.getElementById("dashboardCategoryFilter").value
+        category: dashboardMode === "gas" ? "all" : document.getElementById("dashboardCategoryFilter").value
       };
+      if (dashboardMode === "gas") data.gasDashboardPreferences = preferences;
+      else data.dashboardPreferences = preferences;
       scheduleSave();
     }
-    ["dashboardDateFilter","dashboardGroupView","dashboardChartType","dashboardCategoryFilter","dashboardStartDate","dashboardEndDate"].forEach(id=>document.getElementById(id).addEventListener("change",()=>{document.getElementById("customDateRange").classList.toggle("hidden",document.getElementById("dashboardDateFilter").value!=="custom");renderDashboard();saveDashboardPreferences()}));
-    document.getElementById("resetDashboardFilters").addEventListener("click",()=>{document.getElementById("dashboardDateFilter").value="thisMonth";document.getElementById("dashboardGroupView").value="day";document.getElementById("dashboardChartType").value="line";document.getElementById("dashboardCategoryFilter").value="all";document.getElementById("customDateRange").classList.add("hidden");renderDashboard();saveDashboardPreferences()});
-    document.getElementById("categoryList").addEventListener("click",e=>{const b=e.target.closest("[data-category]");if(!b)return;document.getElementById("dashboardCategoryFilter").value=b.dataset.category;renderDashboard();saveDashboardPreferences()});
-    document.getElementById("heatmap").addEventListener("click",e=>{const b=e.target.closest("[data-date]");if(b)openDetails(data.expenses.filter(x=>x.date===b.dataset.date),formatDate(b.dataset.date))});
-    document.getElementById("heatmapPrev").addEventListener("click",()=>{heatmapMonth=new Date(heatmapMonth.getFullYear(),heatmapMonth.getMonth()-1,1);renderHeatmap()});
-    document.getElementById("heatmapNext").addEventListener("click",()=>{heatmapMonth=new Date(heatmapMonth.getFullYear(),heatmapMonth.getMonth()+1,1);renderHeatmap()});
-    document.getElementById("closeTransactionDetails").addEventListener("click",()=>transactionDetailsModal.classList.remove("show")); transactionDetailsModal.addEventListener("click",e=>{if(e.target===transactionDetailsModal)transactionDetailsModal.classList.remove("show")});
-    document.getElementById("exportTransactionsCsv").addEventListener("click",()=>downloadCsv("filtered-transactions.csv",[["Date","Description","Category","Amount (CAD)"],...filteredExpenses().map(e=>[e.date,e.description||"Spending",e.category||"Uncategorized",Number(e.amount).toFixed(2)])]));
-    document.getElementById("exportDashboardCsv").addEventListener("click",()=>{const groups=groupExpenses(filteredExpenses(),document.getElementById("dashboardGroupView").value);downloadCsv("dashboard-data.csv",[["Period","Total Spent (CAD)","Purchases","Average Purchase (CAD)"],...groups.map(g=>[g.key,g.total.toFixed(2),g.count,(g.count?g.total/g.count:0).toFixed(2)])])});
-    document.getElementById("printDashboard").addEventListener("click",()=>window.print());
+
+    document.getElementById("dailyNavToggle").addEventListener("click", () => setNavigationSection("daily"));
+    document.getElementById("gasNavToggle").addEventListener("click", () => setNavigationSection("gas"));
+    document.getElementById("showTrackerPage").addEventListener("click", () => showPage("dailyTracker"));
+    document.getElementById("showDashboardPage").addEventListener("click", () => showPage("dailyDashboard"));
+    document.getElementById("showGasTrackerPage").addEventListener("click", () => showPage("gasTracker"));
+    document.getElementById("showGasDashboardPage").addEventListener("click", () => showPage("gasDashboard"));
+
+    ["dashboardDateFilter", "dashboardGroupView", "dashboardChartType", "dashboardCategoryFilter", "dashboardStartDate", "dashboardEndDate"].forEach(id => {
+      document.getElementById(id).addEventListener("change", () => {
+        document.getElementById("customDateRange").classList.toggle("hidden", document.getElementById("dashboardDateFilter").value !== "custom");
+        renderDashboard();
+        saveDashboardPreferences();
+      });
+    });
+
+    document.getElementById("resetDashboardFilters").addEventListener("click", () => {
+      document.getElementById("dashboardDateFilter").value = "thisMonth";
+      document.getElementById("dashboardGroupView").value = "day";
+      document.getElementById("dashboardChartType").value = "line";
+      document.getElementById("dashboardCategoryFilter").value = "all";
+      document.getElementById("customDateRange").classList.add("hidden");
+      renderDashboard();
+      saveDashboardPreferences();
+    });
+
+    document.getElementById("categoryList").addEventListener("click", event => {
+      const button = event.target.closest("[data-category]");
+      if (!button || dashboardMode === "gas") return;
+      document.getElementById("dashboardCategoryFilter").value = button.dataset.category;
+      renderDashboard();
+      saveDashboardPreferences();
+    });
+
+    document.getElementById("heatmap").addEventListener("click", event => {
+      const button = event.target.closest("[data-date]");
+      if (button) openDetails(dashboardExpenses().filter(expense => expense.date === button.dataset.date), formatDate(button.dataset.date));
+    });
+    document.getElementById("heatmapPrev").addEventListener("click", () => {
+      heatmapMonth = new Date(heatmapMonth.getFullYear(), heatmapMonth.getMonth() - 1, 1);
+      renderHeatmap();
+    });
+    document.getElementById("heatmapNext").addEventListener("click", () => {
+      heatmapMonth = new Date(heatmapMonth.getFullYear(), heatmapMonth.getMonth() + 1, 1);
+      renderHeatmap();
+    });
+    document.getElementById("closeTransactionDetails").addEventListener("click", () => transactionDetailsModal.classList.remove("show"));
+    transactionDetailsModal.addEventListener("click", event => {
+      if (event.target === transactionDetailsModal) transactionDetailsModal.classList.remove("show");
+    });
+    document.getElementById("exportTransactionsCsv").addEventListener("click", () => {
+      const prefix = dashboardMode === "gas" ? "gas" : "daily-spending";
+      downloadCsv(`${prefix}-filtered-transactions.csv`, [
+        ["Date", "Description", "Category", "Amount (CAD)"],
+        ...filteredExpenses().map(expense => [expense.date, expense.description || (dashboardMode === "gas" ? "Gas" : "Spending"), expense.category || "Uncategorized", Number(expense.amount).toFixed(2)])
+      ]);
+    });
+    document.getElementById("exportDashboardCsv").addEventListener("click", () => {
+      const groups = groupExpenses(filteredExpenses(), document.getElementById("dashboardGroupView").value);
+      const prefix = dashboardMode === "gas" ? "gas" : "daily-spending";
+      downloadCsv(`${prefix}-dashboard-data.csv`, [
+        ["Period", "Total Spent (CAD)", "Purchases", "Average Purchase (CAD)"],
+        ...groups.map(group => [group.key, group.total.toFixed(2), group.count, (group.count ? group.total / group.count : 0).toFixed(2)])
+      ]);
+    });
+    document.getElementById("printDashboard").addEventListener("click", () => window.print());
 
     async function beginUserDataSync(user) {
       if (unsubscribeUserData) {
@@ -1790,6 +2570,9 @@ const firebaseConfig = {
 
           if (!document.getElementById("expenseDate").value) {
             document.getElementById("expenseDate").value = localDateString();
+          }
+          if (!document.getElementById("gasExpenseDate").value) {
+            document.getElementById("gasExpenseDate").value = localDateString();
           }
 
           render();
@@ -1839,6 +2622,9 @@ const firebaseConfig = {
           if (!document.getElementById("expenseDate").value) {
             document.getElementById("expenseDate").value = localDateString();
           }
+          if (!document.getElementById("gasExpenseDate").value) {
+            document.getElementById("gasExpenseDate").value = localDateString();
+          }
 
           render();
         },
@@ -1869,6 +2655,8 @@ const firebaseConfig = {
             appScreen.classList.remove("hidden");
             document.getElementById("accountEmail").textContent = user.email || "Signed in";
             document.getElementById("expenseDate").value = localDateString();
+            document.getElementById("gasExpenseDate").value = localDateString();
+            showPage("dailyTracker");
 
             try {
               await beginUserDataSync(user);
