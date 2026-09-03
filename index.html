@@ -1146,11 +1146,6 @@ const firebaseConfig = {
         .reduce((sum, expense) => sum + Number(expense.amount), 0);
     }
 
-    function allTimeBudgetPosition(type = "daily") {
-      const today = localDateString();
-      return allowanceEarnedUpTo(today, type) - totalSpentUpTo(today, type);
-    }
-
     function expenseVersion(expense) {
       return String(expense.updatedAt || expense.createdAt || "");
     }
