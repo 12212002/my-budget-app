@@ -118,7 +118,7 @@
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 16px;
       margin-bottom: 20px;
     }
@@ -591,6 +591,11 @@
         <div class="label">Total Spent</div>
         <div id="totalSpent" class="value">$0.00</div>
       </div>
+
+      <div class="card">
+        <div class="label">All-Time Over / Under</div>
+        <div id="allTimePosition" class="value">$0.00</div>
+      </div>
     </section>
 
     <section class="card">
@@ -676,6 +681,11 @@
         <div class="card">
           <div class="label">Total Spent</div>
           <div id="gasTotalSpent" class="value">$0.00</div>
+        </div>
+
+        <div class="card">
+          <div class="label">All-Time Over / Under</div>
+          <div id="gasAllTimePosition" class="value">$0.00</div>
         </div>
       </section>
 
@@ -1144,6 +1154,11 @@ const firebaseConfig = {
         .reduce((sum, expense) => sum + Number(expense.amount), 0);
     }
 
+    function allTimeBudgetPosition(type = "daily") {
+      const today = localDateString();
+      return allowanceEarnedUpTo(today, type) - totalSpentUpTo(today, type);
+    }
+
     function expenseVersion(expense) {
       return String(expense.updatedAt || expense.createdAt || "");
     }
@@ -1291,6 +1306,19 @@ const firebaseConfig = {
 
       const totalElement = isGas ? document.getElementById("gasTotalSpent") : document.getElementById("totalSpent");
       totalElement.textContent = currency(allTimeSpent);
+
+      const allTimePosition = allTimeBudgetPosition(type);
+      const allTimePositionElement = isGas
+        ? document.getElementById("gasAllTimePosition")
+        : document.getElementById("allTimePosition");
+      const allTimeStatus = allTimePosition < 0
+        ? `Over ${currency(Math.abs(allTimePosition))}`
+        : allTimePosition > 0
+          ? `Under ${currency(allTimePosition)}`
+          : currency(0);
+      allTimePositionElement.textContent = allTimeStatus;
+      allTimePositionElement.className = `value ${allTimePosition >= 0 ? "positive" : "negative"}`;
+
       renderHistory(type);
     }
 
