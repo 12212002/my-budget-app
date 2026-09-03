@@ -592,10 +592,6 @@
         <div id="totalSpent" class="value">$0.00</div>
       </div>
 
-      <div class="card">
-        <div class="label">All-Time Over / Under</div>
-        <div id="allTimePosition" class="value">$0.00</div>
-      </div>
     </section>
 
     <section class="card">
@@ -683,10 +679,6 @@
           <div id="gasTotalSpent" class="value">$0.00</div>
         </div>
 
-        <div class="card">
-          <div class="label">All-Time Over / Under</div>
-          <div id="gasAllTimePosition" class="value">$0.00</div>
-        </div>
       </section>
 
       <section class="card">
@@ -1306,18 +1298,6 @@ const firebaseConfig = {
 
       const totalElement = isGas ? document.getElementById("gasTotalSpent") : document.getElementById("totalSpent");
       totalElement.textContent = currency(allTimeSpent);
-
-      const allTimePosition = allTimeBudgetPosition(type);
-      const allTimePositionElement = isGas
-        ? document.getElementById("gasAllTimePosition")
-        : document.getElementById("allTimePosition");
-      const allTimeStatus = allTimePosition < 0
-        ? `Over ${currency(Math.abs(allTimePosition))}`
-        : allTimePosition > 0
-          ? `Under ${currency(allTimePosition)}`
-          : currency(0);
-      allTimePositionElement.textContent = allTimeStatus;
-      allTimePositionElement.className = `value ${allTimePosition >= 0 ? "positive" : "negative"}`;
 
       renderHistory(type);
     }
@@ -2244,8 +2224,13 @@ const firebaseConfig = {
       const remaining = budget - total;
       const percentage = budget ? total / budget * 100 : 0;
       const colours = chartColours();
-      const currentMonthSpent = monthSpentFor(localDateString(), dashboardMode);
+      const today = localDateString();
+      const currentMonthSpent = monthSpentFor(today, dashboardMode);
       const monthlyPercentage = settings.monthlyBudget ? currentMonthSpent / settings.monthlyBudget * 100 : 0;
+      const allTimeSpent = totalSpentUpTo(today, dashboardMode);
+      const allTimeBudget = allowanceEarnedUpTo(today, dashboardMode);
+      const allTimeRemaining = allTimeBudget - allTimeSpent;
+      const allTimePercentage = allTimeBudget ? allTimeSpent / allTimeBudget * 100 : 0;
 
       document.getElementById("budgetMessage").textContent = settings.dailyAllowance > 0 ? "" : "Set a daily allowance in Settings to view budget comparisons.";
       document.getElementById("budgetMetrics").innerHTML = `
@@ -2261,7 +2246,12 @@ const firebaseConfig = {
         <hr class="divider">
         <div class="label">Monthly budget</div>
         <div class="value">${currency(currentMonthSpent)} / ${currency(settings.monthlyBudget)}</div>
-        <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, Math.max(0, monthlyPercentage))}%"></div></div>`;
+        <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, Math.max(0, monthlyPercentage))}%"></div></div>
+        <hr class="divider">
+        <div class="label">All-time budget</div>
+        <div class="value">${currency(allTimeSpent)} / ${currency(allTimeBudget)}</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, Math.max(0, allTimePercentage))}%"></div></div>
+        <p class="note ${allTimeRemaining >= 0 ? "positive" : "negative"}">${allTimeRemaining >= 0 ? `${currency(allTimeRemaining)} under budget all time` : `${currency(-allTimeRemaining)} over budget all time`}</p>`;
 
       dashboardCharts.budget = new Chart(document.getElementById("budgetChart"), {
         type: "bar",
