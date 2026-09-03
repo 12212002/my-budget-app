@@ -2226,6 +2226,9 @@ const firebaseConfig = {
       const allTimeBudget = allowanceEarnedUpTo(today, dashboardMode);
       const allTimeRemaining = allTimeBudget - allTimeSpent;
       const allTimePercentage = allTimeBudget ? allTimeSpent / allTimeBudget * 100 : 0;
+      const recoveryDays = allTimeRemaining < 0 && settings.dailyAllowance > 0
+        ? Math.ceil((-allTimeRemaining) / settings.dailyAllowance)
+        : 0;
 
       document.getElementById("budgetMessage").textContent = settings.dailyAllowance > 0 ? "" : "Set a daily allowance in Settings to view budget comparisons.";
       document.getElementById("budgetMetrics").innerHTML = `
@@ -2246,7 +2249,7 @@ const firebaseConfig = {
         <div class="label">All-time budget</div>
         <div class="value">${currency(allTimeSpent)} / ${currency(allTimeBudget)}</div>
         <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, Math.max(0, allTimePercentage))}%"></div></div>
-        <p class="note ${allTimeRemaining >= 0 ? "positive" : "negative"}">${allTimeRemaining >= 0 ? `${currency(allTimeRemaining)} under budget all time` : `${currency(-allTimeRemaining)} over budget all time`}</p>`;
+        <p class="note ${allTimeRemaining >= 0 ? "positive" : "negative"}">${allTimeRemaining >= 0 ? `${currency(allTimeRemaining)} under budget all time` : `${currency(-allTimeRemaining)} over budget all time`} <span style="margin-left:12px">• ${recoveryDays} ${recoveryDays === 1 ? "day" : "days"} to get back to $0</span></p>`;
 
       dashboardCharts.budget = new Chart(document.getElementById("budgetChart"), {
         type: "bar",
