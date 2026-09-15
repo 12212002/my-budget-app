@@ -2139,24 +2139,38 @@ const firebaseConfig = {
       const streaks = streakStats(start, end);
       const allDashboardExpenses = dashboardExpenses();
       const allowance = dashboardSettings().dailyAllowance;
-      const today = localDateString();
-const selectedDates = eachDate(start, end);
-const selectedBudget = selectedDates.length * allowance;
-const remainingBudget = selectedBudget - total;
+     const today = localDateString();
 
-const remainingDays = selectedDates.filter(date => date >= today).length;
+// Don't count future days if the selected range goes past today
+const calculationEnd = end < today ? end : today;
 
-const availablePerDay = remainingDays > 0
-  ? Math.max(0, remainingBudget / remainingDays)
+// Number of allowance days earned in the selected range
+const daysPassed = calculationEnd >= start
+  ? daysInclusive(start, calculationEnd)
   : 0;
 
+// Total spending from the start of the selected range through today
+const spendingToDate = allDashboardExpenses
+  .filter(expense => expense.date >= start && expense.date <= calculationEnd)
+  .reduce((sum, expense) => sum + Number(expense.amount), 0);
+
+// Running amount available
+const availablePerDay = (allowance * daysPassed) - spendingToDate;
       document.getElementById("dashboardPageHeading").textContent = dashboardMode === "gas"
         ? "Gas Spending Dashboard"
         : "Daily Spending Dashboard";
       document.getElementById("dashboardRangeLabel").textContent = `${formatDate(start)} – ${formatDate(end)}`;
       document.getElementById("dashboardSummary").innerHTML = [
         summaryCard("Total spent", currency(total)),
-        summaryCard("Available per day", currency(availablePerDay)),
+        summaryCard(
+  "Available to Spend",
+  currency(availablePerDay),
+  availablePerDay > 0
+    ? "positive"
+    : availablePerDay < 0
+      ? "negative"
+      : "warning"
+),
         summaryCard("Average transaction", currency(positive.length ? total / positive.length : 0)),
         summaryCard("Largest purchase", currency(amounts.length ? Math.max(...amounts) : 0)),
         summaryCard("Smallest purchase", currency(amounts.length ? Math.min(...amounts) : 0)),
