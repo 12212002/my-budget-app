@@ -144,6 +144,7 @@
 
     .positive { color: var(--positive); }
     .negative { color: var(--negative); }
+    .warning { color: #f59e0b; }
 
     .form-grid {
       display: grid;
@@ -2155,7 +2156,7 @@ const spendingToDate = allDashboardExpenses
   .reduce((sum, expense) => sum + Number(expense.amount), 0);
 
 // Running amount available
-const availablePerDay = (allowance * daysPassed) - spendingToDate;
+const availableToSpend = (allowance * daysPassed) - spendingToDate;
       document.getElementById("dashboardPageHeading").textContent = dashboardMode === "gas"
         ? "Gas Spending Dashboard"
         : "Daily Spending Dashboard";
@@ -2164,10 +2165,10 @@ const availablePerDay = (allowance * daysPassed) - spendingToDate;
         summaryCard("Total spent", currency(total)),
         summaryCard(
   "Available to Spend",
-  currency(availablePerDay),
-  availablePerDay > 0
+  currency(availableToSpend),
+  availableToSpend > 0
     ? "positive"
-    : availablePerDay < 0
+    : availableToSpend < 0
       ? "negative"
       : "warning"
 ),
