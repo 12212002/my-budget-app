@@ -2139,6 +2139,16 @@ const firebaseConfig = {
       const streaks = streakStats(start, end);
       const allDashboardExpenses = dashboardExpenses();
       const allowance = dashboardSettings().dailyAllowance;
+      const today = localDateString();
+const selectedDates = eachDate(start, end);
+const selectedBudget = selectedDates.length * allowance;
+const remainingBudget = selectedBudget - total;
+
+const remainingDays = selectedDates.filter(date => date >= today).length;
+
+const availablePerDay = remainingDays > 0
+  ? Math.max(0, remainingBudget / remainingDays)
+  : 0;
 
       document.getElementById("dashboardPageHeading").textContent = dashboardMode === "gas"
         ? "Gas Spending Dashboard"
@@ -2146,7 +2156,7 @@ const firebaseConfig = {
       document.getElementById("dashboardRangeLabel").textContent = `${formatDate(start)} – ${formatDate(end)}`;
       document.getElementById("dashboardSummary").innerHTML = [
         summaryCard("Total spent", currency(total)),
-        summaryCard("Average per day", currency(total / days)),
+        summaryCard("Available per day", currency(availablePerDay)),
         summaryCard("Average transaction", currency(positive.length ? total / positive.length : 0)),
         summaryCard("Largest purchase", currency(amounts.length ? Math.max(...amounts) : 0)),
         summaryCard("Smallest purchase", currency(amounts.length ? Math.min(...amounts) : 0)),
